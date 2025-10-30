@@ -14,6 +14,8 @@ contract MyToken is ERC20, ERC20Burnable, Ownable, Pausable {
         _mint(msg.sender, initialSupplyWhole * 10 ** decimals());
     }
 
+    address public treasury;
+    uint256 public feeBps = 100;
     uint256 public maxTransferAmount;
     uint256 public CLAIM_AMOUNT = 100 * 10 ** 18;
     mapping (address => bool) public hasClaimed;
@@ -28,16 +30,34 @@ contract MyToken is ERC20, ERC20Burnable, Ownable, Pausable {
         _mint(msg.sender, CLAIM_AMOUNT);
     }
 
+    function setTreasury(address _treasuryAddress) external onlyOwner {
+        treasury = _treasuryAddress;
+    }
+
+    function setFeeBps(uint256 _feeBps) external onlyOwner {
+        feeBps = _feeBps;
+    }
+
     function pause() external onlyOwner { _pause(); }
     function unpause() external onlyOwner { _unpause(); }
 
     function _update(address from, address to, uint256 value) internal override {
-        if (from != address(0) && to != address(0)) {
+        require(!paused(), "Token is paused");
+
+        if (from != address(0) && to != address(0) && to != treasury && from != treasury 
+        && treasury != address(0) && feeBps > 0) {
             if (maxTransferAmount != 0) {
                 require(value <= maxTransferAmount, "too big transfer");
             }
+
+            uint256 fee = (value * feeBps) / 10_000;
+            uint256 sendAmount = value - fee;
+
+            super._update(from, treasury, fee);
+            super._update(from, to, sendAmount);
+            return;
         }
-        require(!paused(), "Token is paused");
+        
         super._update(from, to, value);
     }
 }
