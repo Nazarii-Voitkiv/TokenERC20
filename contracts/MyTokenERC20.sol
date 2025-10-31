@@ -19,6 +19,7 @@ contract MyToken is ERC20, ERC20Burnable, Ownable, Pausable {
     uint256 public maxTransferAmount;
     uint256 public CLAIM_AMOUNT = 100 * 10 ** 18;
     mapping (address => bool) public hasClaimed;
+    mapping (address => bool) public isWhitelisted;
 
     function setMaxTransferAmount(uint _maxTransferAmount) external onlyOwner {
         maxTransferAmount = _maxTransferAmount;
@@ -35,13 +36,23 @@ contract MyToken is ERC20, ERC20Burnable, Ownable, Pausable {
     }
 
     function setFeeBps(uint256 _feeBps) external onlyOwner {
+        require(_feeBps <= 500, 'fee too high');
         feeBps = _feeBps;
+    }
+
+    function setWhitelisted(address _address, bool allowed) external onlyOwner {
+        isWhitelisted[_address] = allowed;
     }
 
     function pause() external onlyOwner { _pause(); }
     function unpause() external onlyOwner { _unpause(); }
 
     function _update(address from, address to, uint256 value) internal override {
+        if (from != address(0) && to != address(0) && !isWhitelisted[from]) {
+            super._update(from, to, value);
+            return;
+        }
+
         require(!paused(), "Token is paused");
 
         if (from != address(0) && to != address(0) && to != treasury && from != treasury 
