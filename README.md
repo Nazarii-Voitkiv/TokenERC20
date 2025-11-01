@@ -11,6 +11,9 @@ It extends the base ERC-20 standard by adding features such as transaction fees,
 - Hardhat 2.22.5
 - Ethers.js 5.8.0
 - OpenZeppelin Contracts 5.4.0
+- TypeScript 5.9.3
+- ts-node 10.9.2
+- @nomiclabs/hardhat-ethers 2.2.3
 
 ---
 
@@ -20,13 +23,17 @@ It extends the base ERC-20 standard by adding features such as transaction fees,
 MyTokenERC20/
 │
 ├── contracts/
-│   └── MyToken.sol              # Main ERC-20 token contract
+│   └── MyTokenERC20.sol         # Main ERC-20 token contract
 │
 ├── scripts/
-│   └── deploy.js                # Deployment script
+│   └── deploy.ts                # Deployment script
 │
-├── hardhat.config.js            # Hardhat configuration
+├── test/
+│   └── MyTokenERC20.ts          # Test file
+├── .gitignore                   # Git ignore file
+├── hardhat.config.ts            # Hardhat configuration
 ├── package.json
+├── tsconfig.json
 └── README.md
 ```
 
@@ -51,7 +58,7 @@ npx hardhat node
 In a new terminal window:
 
 ```bash
-npx hardhat run scripts/deploy.js --network localhost
+npx hardhat run scripts/deploy.ts --network localhost
 ```
 
 After deployment, you will see:
