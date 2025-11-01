@@ -1,10 +1,15 @@
-import { ethers } from "hardhat";
+import { network } from "hardhat";
 
 async function main() {
-  const Token = await ethers.getContractFactory("MyToken");
-  const token = await Token.deploy("MyToken", "MTK", 1_000_000);
-  await token.deployed();
-  console.log("MyToken deployed to:", token.address);
+  const { ethers } = await network.connect();
+  const token = await ethers.deployContract("MyToken", [
+    "MyToken",
+    "MTK",
+    1_000_000,
+  ]);
+  await token.waitForDeployment();
+
+  console.log("MyToken deployed to:", await token.getAddress());
 }
 
 main().catch((err) => {

@@ -8,13 +8,13 @@ It extends the base ERC-20 standard by adding features such as transaction fees,
 ## Tech Stack
 
 - Solidity 0.8.20
-- Hardhat 2.22.5
-- Ethers.js (used in tests/scripts) — v5.x
+- Hardhat 3.x with the Mocha + Ethers toolbox
+- Ethers.js (Hardhat runtime + toolbox helpers)
 - Frontend: React + Vite + ethers@6.15.0
 - OpenZeppelin Contracts 5.4.0
 - TypeScript 5.9.3
 - ts-node 10.9.2
-- @nomiclabs/hardhat-ethers 2.2.3
+- @nomicfoundation/hardhat-ethers
 
 ---
 
@@ -30,7 +30,7 @@ MyTokenERC20/
 │   └── deploy.ts                # Deployment script
 │
 ├── test/
-│   └── MyTokenERC20.ts          # Test file
+│   └── MyTokenERC20.test.ts     # Mocha test suite
 │
 ├── frontend/                    # React + Vite frontend UI (control panel)
 │   ├── src/
@@ -76,6 +76,12 @@ After deployment, you will see:
 MyToken deployed to: 0x...
 ```
 
+### 4. Run the tests
+
+```bash
+npx hardhat test
+```
+
 ---
 
 ## Frontend (React + Vite)
@@ -97,15 +103,15 @@ npm run dev
 
 ## Contract Features
 
-| Function                 | Description                                                              |
+| Function/Flow            | Description                                                              |
 | ------------------------ | ------------------------------------------------------------------------ |
-| `claimFreeTokens()`      | Allows a user to claim 100 free tokens once                              |
+| `claimFreeTokens()`      | Mints a one-time 100-token allocation to the caller                      |
 | `setFeeBps(uint256)`     | Sets the transaction fee (in basis points, 100 = 1%)                     |
 | `setTreasury(address)`   | Defines the treasury address that receives the fee                       |
-| `setMaxTransferAmount(uint256)` | Sets the maximum allowed transfer amount                               |
-| `pause()` / `unpause()`  | Pauses or resumes all token transfers                                    |
-| `setWhitelisted(address,bool)` | Adds or removes an address from the whitelist                          |
-| `_update()`              | Overridden ERC20 internal function to handle custom rules (fee, whitelist, pause, transfer limit) |
+| `setMaxTransferAmount(uint256)` | Sets the maximum transfer size (checked only when fees apply)            |
+| `pause()` / `unpause()`  | Owner can halt normal transfers                                          |
+| `setWhitelisted(address,bool)` | Whitelisted accounts skip pause, fee, and limit checks                   |
+| `_update()`              | Overridden ERC20 hook that enforces the custom rules above               |
 
 ---
 
@@ -121,7 +127,18 @@ The `_update()` function executes during every token transfer and applies the fo
 
 ---
 
+## Test Suite Overview (`test/MyTokenERC20.test.ts`)
+
+- **Deployment**: Confirms the full initial supply (1,000,000 tokens) is minted to the deployer.
+- **Claiming**: Ensures each address can call `claimFreeTokens()` exactly once and emits the mint transfer.
+- **Fee Mechanics**: Verifies fees are delivered to the treasury and that the optional max transfer guard works alongside fees.
+- **Pause & Whitelist**: Shows that paused transfers revert, while whitelisted addresses can still move tokens.
+
+All tests use the Hardhat 3 toolbox matchers (for example `.to.not.revert(ethers)`) and can be executed with `npx hardhat test`.
+
+---
+
 ## Requirements
 
-- Node.js version ≤ 20.x
+- Node.js 18 or 20
 - npm 8+
