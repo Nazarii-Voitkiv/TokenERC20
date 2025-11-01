@@ -1,0 +1,22 @@
+.card {
+  background: rgba(15, 23, 42, 0.78);
+  border: 1px solid rgba(148, 163, 184, 0.15);
+  border-radius: 1.4rem;
+  padding: 1.6rem;
+  box-shadow: 0 25px 45px rgba(2, 6, 23, 0.35);
+  backdrop-filter: blur(22px);
+}
+
+.cardHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.2rem;
+}
+
+.cardHeaderTitle {
+  margin: 0;
+  font-size: 1.3rem;
+  font-weight: 600;
+}

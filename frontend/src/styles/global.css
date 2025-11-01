@@ -1,0 +1,26 @@
+:root {
+  color-scheme: light;
+  font-family: "Inter", "Segoe UI", system-ui, -apple-system, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: radial-gradient(circle at 20% 20%, rgba(56, 189, 248, 0.18), transparent),
+    radial-gradient(circle at 80% 10%, rgba(129, 140, 248, 0.18), transparent),
+    linear-gradient(160deg, #0f172a 0%, #020617 100%);
+  color: #e2e8f0;
+  min-height: 100vh;
+}
+
+button {
+  font: inherit;
+}
+
+input,
+select {
+  font: inherit;
+}

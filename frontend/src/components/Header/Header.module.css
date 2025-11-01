@@ -1,0 +1,57 @@
+.header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1.5rem;
+}
+
+.title {
+  margin: 0 0 0.4rem;
+  font-size: 1.95rem;
+  font-weight: 600;
+}
+
+.muted {
+  color: rgba(226, 232, 240, 0.7);
+  margin: 0;
+}
+
+.mono {
+  font-family: "JetBrains Mono", "Roboto Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.roleBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.35rem 0.75rem;
+  border-radius: 999px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  background: rgba(248, 250, 252, 0.12);
+  color: #f8fafc;
+}
+
+.roleBadgeOwner {
+  background: rgba(74, 222, 128, 0.18);
+  color: #bbf7d0;
+}
+
+@media (max-width: 768px) {
+  .header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .actions {
+    width: 100%;
+    justify-content: flex-start;
+  }
+}

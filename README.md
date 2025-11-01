@@ -9,7 +9,8 @@ It extends the base ERC-20 standard by adding features such as transaction fees,
 
 - Solidity 0.8.20
 - Hardhat 2.22.5
-- Ethers.js 5.8.0
+- Ethers.js (used in tests/scripts) — v5.x
+- Frontend: React + Vite + ethers@6.15.0
 - OpenZeppelin Contracts 5.4.0
 - TypeScript 5.9.3
 - ts-node 10.9.2
@@ -30,6 +31,14 @@ MyTokenERC20/
 │
 ├── test/
 │   └── MyTokenERC20.ts          # Test file
+│
+├── frontend/                    # React + Vite frontend UI (control panel)
+│   ├── src/
+│   │   ├── App.tsx              # main app, wallet + contract logic
+│   │   ├── abi/MyToken.json     # contract ABI used by the frontend
+│   │   └── components/          # UI components (Header, Overview, Owner/User forms)
+│   └── package.json
+│
 ├── .gitignore                   # Git ignore file
 ├── hardhat.config.ts            # Hardhat configuration
 ├── package.json
@@ -39,7 +48,7 @@ MyTokenERC20/
 
 ---
 
-## Getting Started
+## Getting Started (backend / contract)
 
 ### 1. Install dependencies
 
@@ -65,6 +74,23 @@ After deployment, you will see:
 
 ```
 MyToken deployed to: 0x...
+```
+
+---
+
+## Frontend (React + Vite)
+
+The repository includes a small control panel frontend located in the `frontend/` directory. It uses `ethers@6` to interact with the deployed `MyToken` contract via an injected wallet (MetaMask).
+
+Quick steps to run the frontend locally:
+
+```bash
+cd frontend
+npm install
+# Create a .env file (or set environment variable) with the deployed contract address
+# Example .env:
+# VITE_CONTRACT_ADDRESS=0xYourDeployedContractAddress
+npm run dev
 ```
 
 ---
