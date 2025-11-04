@@ -4,13 +4,14 @@ import { network } from "hardhat";
 const NAME = "MyToken";
 const SYMBOL = "MTK";
 const INITIAL_SUPPLY_WHOLE = 1_000_000n;
+const CLAIM_AMOUNT_WHOLE = 100n;
 
 async function deployTokenFixture() {
   const { ethers } = await network.connect();
   const [owner, alice, bob, treasurySigner] = await ethers.getSigners();
 
   const Token = await ethers.getContractFactory("MyToken");
-  const token = await Token.deploy(NAME, SYMBOL, INITIAL_SUPPLY_WHOLE);
+  const token = await Token.deploy(NAME, SYMBOL, INITIAL_SUPPLY_WHOLE, CLAIM_AMOUNT_WHOLE);
   await token.waitForDeployment();
 
   return { token, owner, alice, bob, treasurySigner, ethers };
@@ -103,7 +104,7 @@ describe("MyToken", function () {
       await expect(token.connect(alice).transfer(bob.address, amount)).to.be
         .revertedWith("Token is paused");
 
-      await token.connect(owner).setWhitelisted(alice.address, true);
+      await token.connect(owner).setWhitelisted([alice.address], true);
       await expect(
         token.connect(alice).transfer(bob.address, amount),
       ).to.not.revert(ethers);

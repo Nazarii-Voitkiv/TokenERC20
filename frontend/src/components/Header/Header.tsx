@@ -2,9 +2,11 @@ import buttonStyles from "../../styles/Button.module.css";
 import styles from "./Header.module.css";
 
 type HeaderProps = {
-  contractAddress: string;
+  tokenAddress: string;
+  safeAddress?: string;
   account: string;
-  isOwner: boolean;
+  roleLabel: string;
+  isSafeOwner: boolean;
   isRefreshing: boolean;
   tokenName?: string;
   onConnect: () => void;
@@ -13,9 +15,11 @@ type HeaderProps = {
 };
 
 export function Header({
-  contractAddress,
+  tokenAddress,
+  safeAddress,
   account,
-  isOwner,
+  roleLabel,
+  isSafeOwner,
   isRefreshing,
   tokenName,
   onConnect,
@@ -29,16 +33,22 @@ export function Header({
           {tokenName ? `${tokenName} Control Center` : "Control Center"}
         </h1>
         <p className={styles.muted}>
-          Contract&nbsp;
-          <span className={styles.mono}>{contractAddress}</span>
+          Token&nbsp;
+          <span className={styles.mono}>{tokenAddress}</span>
         </p>
+        {safeAddress && (
+          <p className={styles.muted}>
+            Multisig&nbsp;
+            <span className={styles.mono}>{safeAddress}</span>
+          </p>
+        )}
       </div>
 
       <div className={styles.actions}>
         {account ? (
           <>
-            <span className={`${styles.roleBadge} ${isOwner ? styles.roleBadgeOwner : ""}`}>
-              {isOwner ? "Owner" : "User"}
+            <span className={`${styles.roleBadge} ${isSafeOwner ? styles.roleBadgeOwner : ""}`}>
+              {roleLabel}
             </span>
             <button
               className={`${buttonStyles.btn} ${buttonStyles.ghost}`}

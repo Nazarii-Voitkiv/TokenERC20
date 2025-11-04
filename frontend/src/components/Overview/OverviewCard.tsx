@@ -1,11 +1,12 @@
-import type { ContractSnapshot } from "../../types";
+import type { ContractSnapshot, SafeSnapshot } from "../../types";
 import cardStyles from "../../styles/Card.module.css";
 import styles from "./OverviewCard.module.css";
 
 type OverviewCardProps = {
   snapshot: ContractSnapshot | null;
   account: string;
-  isOwner: boolean;
+  roleLabel: string;
+  safeSnapshot: SafeSnapshot | null;
   formattedBalance: string;
   formattedTotalSupply: string;
   formattedClaimAmount: string;
@@ -16,7 +17,8 @@ type OverviewCardProps = {
 export function OverviewCard({
   snapshot,
   account,
-  isOwner,
+  roleLabel,
+  safeSnapshot,
   formattedBalance,
   formattedTotalSupply,
   formattedClaimAmount,
@@ -25,6 +27,13 @@ export function OverviewCard({
 }: OverviewCardProps) {
   const statusClass =
     snapshot?.paused === true ? styles.statusPaused : styles.statusActive;
+
+  const safeThreshold =
+    safeSnapshot?.threshold != null ? `${safeSnapshot.threshold} approvals` : "-";
+
+  const safeOwnersSummary = safeSnapshot?.owners?.length
+    ? `${safeSnapshot.owners.length} wallet${safeSnapshot.owners.length > 1 ? "s" : ""}`
+    : "-";
 
   return (
     <section className={cardStyles.card}>
@@ -44,7 +53,7 @@ export function OverviewCard({
         </div>
         <div className={styles.statCard}>
           <span className={styles.statLabel}>Role</span>
-          <span className={styles.statValue}>{account ? (isOwner ? "Owner" : "User") : "-"}</span>
+          <span className={styles.statValue}>{account ? roleLabel : "-"}</span>
         </div>
         <div className={styles.statCard}>
           <span className={styles.statLabel}>Balance</span>
@@ -77,6 +86,14 @@ export function OverviewCard({
           <span className={styles.statValue}>
             {formattedClaimAmount} {snapshot?.symbol ?? ""}
           </span>
+        </div>
+        <div className={styles.statCard}>
+          <span className={styles.statLabel}>Multisig Threshold</span>
+          <span className={styles.statValue}>{safeThreshold}</span>
+        </div>
+        <div className={styles.statCard}>
+          <span className={styles.statLabel}>Multisig Owners</span>
+          <span className={styles.statValue}>{safeOwnersSummary}</span>
         </div>
       </div>
     </section>

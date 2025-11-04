@@ -2,13 +2,14 @@ import type { FormEvent } from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ethers } from "ethers";
 import MyToken from "./abi/MyToken.json";
+import MyTokenSafe from "./abi/MyTokenSafe.json";
 import { Header } from "./components/Header/Header";
 import { OverviewCard } from "./components/Overview/OverviewCard";
 import { UserActions } from "./components/UserActions/UserActions";
 import { OwnerControls } from "./components/OwnerControls/OwnerControls";
 import { Toast as ToastBanner } from "./components/Toast/Toast";
 import styles from "./App.module.css";
-import type { ContractSnapshot, Toast } from "./types";
+import type { ContractSnapshot, SafeSnapshot, Toast } from "./types";
 
 declare global {
   interface Window {
@@ -17,11 +18,13 @@ declare global {
 }
 
 const CONTRACT_ADDRESS = import.meta.env.VITE_CONTRACT_ADDRESS as string;
+const SAFE_ADDRESS = import.meta.env.VITE_SAFE_ADDRESS as string | undefined;
 const ZERO_ADDRESS = ethers.ZeroAddress;
 
 function App() {
   const [account, setAccount] = useState<string>("");
   const [snapshot, setSnapshot] = useState<ContractSnapshot | null>(null);
+  const [safeSnapshot, setSafeSnapshot] = useState<SafeSnapshot | null>(null);
   const [balance, setBalance] = useState<bigint>(0n);
   const [hasClaimed, setHasClaimed] = useState<boolean>(false);
   const [loadingAction, setLoadingAction] = useState<string | null>(null);
@@ -35,6 +38,10 @@ function App() {
   const [whitelistForm, setWhitelistForm] = useState({ address: "", allowed: true });
 
   const providerRef = useRef<ethers.BrowserProvider | null>(null);
+  const tokenMetaRef = useRef({ decimals: 18, symbol: "TOKEN" });
+
+  const tokenInterface = useMemo(() => new ethers.Interface(MyToken.abi), []);
+  const safeInterface = useMemo(() => new ethers.Interface(MyTokenSafe.abi), []);
 
   const setAlert = useCallback((type: Toast["type"], message: string) => {
     setToast({ type, message });
@@ -98,6 +105,168 @@ function App() {
     return new ethers.Contract(CONTRACT_ADDRESS, MyToken.abi, signer);
   }, [getProvider]);
 
+  const getReadSafeContract = useCallback(async () => {
+    if (!SAFE_ADDRESS || !ethers.isAddress(SAFE_ADDRESS)) {
+      throw new Error("VITE_SAFE_ADDRESS must be configured in the frontend .env");
+    }
+    const provider = await getProvider();
+    return new ethers.Contract(SAFE_ADDRESS, MyTokenSafe.abi, provider);
+  }, [getProvider]);
+
+  const getWriteSafeContract = useCallback(async () => {
+    if (!SAFE_ADDRESS || !ethers.isAddress(SAFE_ADDRESS)) {
+      throw new Error("VITE_SAFE_ADDRESS must be configured in the frontend .env");
+    }
+    const provider = await getProvider();
+    const signer = await provider.getSigner();
+    return new ethers.Contract(SAFE_ADDRESS, MyTokenSafe.abi, signer);
+  }, [getProvider]);
+
+  const describeSafeTransaction = useCallback(
+    (to: string, data: string, value: bigint) => {
+      const lowerTo = to.toLowerCase();
+      const tokenLower = CONTRACT_ADDRESS.toLowerCase();
+      const safeLower = SAFE_ADDRESS ? SAFE_ADDRESS.toLowerCase() : "";
+      const { decimals, symbol } = tokenMetaRef.current;
+      const valueSuffix =
+        value > 0n ? ` (+${ethers.formatEther(value)} ETH transfer)` : "";
+
+      if (!data || data === "0x") {
+        if (value > 0n) {
+          return `Send ${ethers.formatEther(value)} ETH to ${to}`;
+        }
+        return `Call ${to} with no calldata`;
+      }
+
+      if (lowerTo === tokenLower) {
+        try {
+          const parsed = tokenInterface.parseTransaction({ data });
+          if (!parsed) {
+            throw new Error("Unable to decode token calldata");
+          }
+          switch (parsed.name) {
+            case "pause":
+              return `Pause token${valueSuffix}`;
+            case "unpause":
+              return `Unpause token${valueSuffix}`;
+            case "setTreasury":
+              return `Set treasury to ${parsed.args[0]}${valueSuffix}`;
+            case "setFeeBps":
+              return `Set fee to ${parsed.args[0]} bps${valueSuffix}`;
+            case "setMaxTransferAmount": {
+              const raw = parsed.args[0] as bigint;
+              const formatted =
+                raw === 0n
+                  ? "unlimited"
+                  : `${ethers.formatUnits(raw, decimals)} ${symbol}`;
+              return `Set max transfer to ${formatted}${valueSuffix}`;
+            }
+            case "setWhitelisted": {
+              const addresses = (parsed.args[0] as string[]) ?? [];
+              const allowed = Boolean(parsed.args[1]);
+              if (addresses.length === 1) {
+                return `${allowed ? "Whitelist" : "Remove"} ${addresses[0]}${valueSuffix}`;
+              }
+              return `${allowed ? "Whitelist" : "Remove"} ${addresses.length} addresses${valueSuffix}`;
+            }
+            default:
+              return `Call token.${parsed.name}()${valueSuffix}`;
+          }
+        } catch {
+          // fallthrough to generic path
+        }
+      }
+
+      if (SAFE_ADDRESS && lowerTo === safeLower) {
+        try {
+          const parsed = safeInterface.parseTransaction({ data });
+          if (!parsed) {
+            throw new Error("Unable to decode safe calldata");
+          }
+          switch (parsed.name) {
+            case "addOwner":
+              return `Add multisig owner ${parsed.args[0]}${valueSuffix}`;
+            case "removeOwner":
+              return `Remove multisig owner ${parsed.args[0]}${valueSuffix}`;
+            case "changeThreshold":
+              return `Change threshold to ${parsed.args[0]}${valueSuffix}`;
+            default:
+              return `Call multisig.${parsed.name}()${valueSuffix}`;
+          }
+        } catch {
+          // ignore and use generic fallback
+        }
+      }
+
+      const selector = data.slice(0, 10);
+      return `Call ${to} (${selector})${valueSuffix}`;
+    },
+    [safeInterface, tokenInterface]
+  );
+
+  const fetchSafeSnapshot = useCallback(async () => {
+    if (!SAFE_ADDRESS || !ethers.isAddress(SAFE_ADDRESS)) {
+      setSafeSnapshot(null);
+      return null;
+    }
+
+    try {
+      const safeContract = await getReadSafeContract();
+      const [owners, thresholdRaw, countRaw] = await Promise.all([
+        safeContract.getOwners(),
+        safeContract.threshold(),
+        safeContract.getTransactionCount(),
+      ]);
+
+      const threshold = Number(thresholdRaw);
+      const txCount = Number(countRaw);
+      const txIds = Array.from({ length: txCount }, (_, index) => index);
+
+      const transactions = await Promise.all(
+        txIds.map(async (txId) => {
+          const tx = await safeContract.getTransaction(txId);
+          const to: string = tx[0];
+          const valueRaw: bigint = tx[1];
+          const data: string = tx[2];
+          const executed: boolean = tx[3];
+          const numConfirmationsRaw: bigint = tx[4];
+
+          const confirmations = await Promise.all(
+            owners.map(async (owner: string) => {
+              const confirmed = await safeContract.isConfirmed(txId, owner);
+              return confirmed ? owner : null;
+            })
+          );
+
+          return {
+            id: txId,
+            to,
+            value: valueRaw,
+            data,
+            executed,
+            numConfirmations: Number(numConfirmationsRaw),
+            confirmations: confirmations.filter(Boolean) as string[],
+            description: describeSafeTransaction(to, data, valueRaw),
+          };
+        })
+      );
+
+      const snapshot: SafeSnapshot = {
+        address: SAFE_ADDRESS,
+        owners,
+        threshold,
+        transactions,
+      };
+
+      setSafeSnapshot(snapshot);
+      return snapshot;
+    } catch (error) {
+      console.error(error);
+      setSafeSnapshot(null);
+      return null;
+    }
+  }, [describeSafeTransaction, getReadSafeContract]);
+
   const fetchContractSnapshot = useCallback(async () => {
     try {
       const contract = await getReadContract();
@@ -128,6 +297,8 @@ function App() {
       const decimals = Number(decimalsRaw);
       const feeBps = Number(feeBpsRaw);
 
+      tokenMetaRef.current = { decimals, symbol };
+
       setSnapshot({
         name,
         symbol,
@@ -144,10 +315,11 @@ function App() {
       setTreasuryInput(treasuryAddress === ZERO_ADDRESS ? "" : treasuryAddress);
       setFeeInput(feeBps.toString());
       setMaxTransferInput(maxTransfer === 0n ? "" : ethers.formatUnits(maxTransfer, decimals));
+      await fetchSafeSnapshot();
     } catch (error) {
       console.error(error);
     }
-  }, [getReadContract]);
+  }, [fetchSafeSnapshot, getReadContract]);
 
   const fetchAccountState = useCallback(
     async (addr?: string) => {
@@ -293,6 +465,45 @@ function App() {
     [setAlert]
   );
 
+  const submitSafeTransaction = useCallback(
+    async (label: string, to: string, data: string, value: bigint = 0n) => {
+      if (!SAFE_ADDRESS) {
+        setAlert("error", "VITE_SAFE_ADDRESS must be set in the frontend environment");
+        return null;
+      }
+      let submittedId: number | null = null;
+
+      await performAction(label, "", async () => {
+        const safeContract = await getWriteSafeContract();
+        const response = await safeContract.submitTransaction(to, value, data);
+        const receipt = await response.wait();
+
+        for (const log of receipt.logs ?? []) {
+          try {
+            const parsed = safeContract.interface.parseLog(log);
+            if (parsed?.name === "TransactionSubmitted") {
+              submittedId = Number(parsed.args.txId);
+              break;
+            }
+          } catch {
+            // ignore unrelated logs
+          }
+        }
+
+        await fetchSafeSnapshot();
+        setAlert(
+          "success",
+          submittedId != null
+            ? `Multisig transaction #${submittedId} submitted.`
+            : "Multisig transaction submitted.",
+        );
+      });
+
+      return submittedId;
+    },
+    [fetchSafeSnapshot, getWriteSafeContract, performAction, setAlert]
+  );
+
   const handleClaim = useCallback(async () => {
     if (!snapshot) {
       setAlert("error", "Contract data not loaded");
@@ -311,13 +522,9 @@ function App() {
       setAlert("error", "Contract data not loaded");
       return;
     }
-    await performAction(snapshot.paused ? "unpause" : "pause", "Contract state updated", async () => {
-      const contract = await getWriteContract();
-      const tx = snapshot.paused ? await contract.unpause() : await contract.pause();
-      await tx.wait();
-      await fetchContractSnapshot();
-    });
-  }, [fetchContractSnapshot, getWriteContract, performAction, setAlert, snapshot]);
+    const fn = snapshot.paused ? "unpause" : "pause";
+    await submitSafeTransaction(fn, CONTRACT_ADDRESS, tokenInterface.encodeFunctionData(fn, []));
+  }, [snapshot, submitSafeTransaction, setAlert, tokenInterface]);
 
   const handleTransfer = useCallback(
     async (event: FormEvent<HTMLFormElement>) => {
@@ -407,13 +614,12 @@ function App() {
       setAlert("error", "Enter a valid treasury address");
       return;
     }
-    await performAction("treasury", "Treasury updated", async () => {
-      const contract = await getWriteContract();
-      const tx = await contract.setTreasury(targetAddress);
-      await tx.wait();
-      await fetchContractSnapshot();
-    });
-  }, [fetchContractSnapshot, getWriteContract, performAction, setAlert, treasuryInput]);
+    await submitSafeTransaction(
+      "treasury",
+      CONTRACT_ADDRESS,
+      tokenInterface.encodeFunctionData("setTreasury", [targetAddress])
+    );
+  }, [submitSafeTransaction, setAlert, tokenInterface, treasuryInput]);
 
   const handleSetFee = useCallback(async () => {
     const fee = Number(feeInput);
@@ -421,13 +627,12 @@ function App() {
       setAlert("error", "Fee must be between 0 and 500 bps");
       return;
     }
-    await performAction("fee", "Fee updated", async () => {
-      const contract = await getWriteContract();
-      const tx = await contract.setFeeBps(fee);
-      await tx.wait();
-      await fetchContractSnapshot();
-    });
-  }, [fetchContractSnapshot, feeInput, getWriteContract, performAction, setAlert]);
+    await submitSafeTransaction(
+      "fee",
+      CONTRACT_ADDRESS,
+      tokenInterface.encodeFunctionData("setFeeBps", [fee])
+    );
+  }, [feeInput, setAlert, submitSafeTransaction, tokenInterface]);
 
   const handleSetMaxTransfer = useCallback(async () => {
     if (!snapshot) {
@@ -436,13 +641,12 @@ function App() {
     }
     const value = maxTransferInput.trim();
     const amountParsed = value ? ethers.parseUnits(value, snapshot.decimals) : 0n;
-    await performAction("max-transfer", "Max transfer threshold updated", async () => {
-      const contract = await getWriteContract();
-      const tx = await contract.setMaxTransferAmount(amountParsed);
-      await tx.wait();
-      await fetchContractSnapshot();
-    });
-  }, [fetchContractSnapshot, getWriteContract, maxTransferInput, performAction, setAlert, snapshot]);
+    await submitSafeTransaction(
+      "max-transfer",
+      CONTRACT_ADDRESS,
+      tokenInterface.encodeFunctionData("setMaxTransferAmount", [amountParsed])
+    );
+  }, [maxTransferInput, setAlert, snapshot, submitSafeTransaction, tokenInterface]);
 
   const handleWhitelist = useCallback(async () => {
     const address = whitelistForm.address.trim();
@@ -450,17 +654,48 @@ function App() {
       setAlert("error", "Enter a valid address");
       return;
     }
-    await performAction(
+    await submitSafeTransaction(
       "whitelist",
-      whitelistForm.allowed ? "Address whitelisted" : "Address removed from whitelist",
-      async () => {
-        const contract = await getWriteContract();
-        const tx = await contract.setWhitelisted(address, whitelistForm.allowed);
-        await tx.wait();
-        await fetchContractSnapshot();
-      }
+      CONTRACT_ADDRESS,
+      tokenInterface.encodeFunctionData("setWhitelisted", [[address], whitelistForm.allowed])
     );
-  }, [fetchContractSnapshot, getWriteContract, performAction, setAlert, whitelistForm]);
+  }, [setAlert, submitSafeTransaction, tokenInterface, whitelistForm]);
+
+  const handleConfirmTransaction = useCallback(
+    async (txId: number) => {
+      await performAction(`confirm-${txId}`, "Confirmation sent", async () => {
+        const safeContract = await getWriteSafeContract();
+        const tx = await safeContract.confirmTransaction(txId);
+        await tx.wait();
+        await fetchSafeSnapshot();
+      });
+    },
+    [fetchSafeSnapshot, getWriteSafeContract, performAction]
+  );
+
+  const handleRevokeTransaction = useCallback(
+    async (txId: number) => {
+      await performAction(`revoke-${txId}`, "Confirmation revoked", async () => {
+        const safeContract = await getWriteSafeContract();
+        const tx = await safeContract.revokeConfirmation(txId);
+        await tx.wait();
+        await fetchSafeSnapshot();
+      });
+    },
+    [fetchSafeSnapshot, getWriteSafeContract, performAction]
+  );
+
+  const handleExecuteTransaction = useCallback(
+    async (txId: number) => {
+      await performAction(`execute-${txId}`, "Transaction executed", async () => {
+        const safeContract = await getWriteSafeContract();
+        const tx = await safeContract.executeTransaction(txId);
+        await tx.wait();
+        await Promise.all([fetchSafeSnapshot(), fetchContractSnapshot()]);
+      });
+    },
+    [fetchContractSnapshot, fetchSafeSnapshot, getWriteSafeContract, performAction]
+  );
 
   const handleRefresh = useCallback(async () => {
     await performAction("refresh", "", async () => {
@@ -528,10 +763,23 @@ function App() {
     };
   }, [account, fetchAccountState, localDisconnect, setAlert]);
 
-  const isOwner = useMemo(() => {
+  const legacyOwner = useMemo(() => {
     if (!account || !snapshot?.owner) return false;
     return account.toLowerCase() === snapshot.owner.toLowerCase();
   }, [account, snapshot?.owner]);
+
+  const isSafeOwner = useMemo(() => {
+    if (!account) return false;
+    if (safeSnapshot?.owners?.length) {
+      return safeSnapshot.owners.some((owner) => owner.toLowerCase() === account.toLowerCase());
+    }
+    return legacyOwner;
+  }, [account, legacyOwner, safeSnapshot]);
+
+  const roleLabel = useMemo(() => {
+    if (!account) return "-";
+    return isSafeOwner ? "Multisig Owner" : "User";
+  }, [account, isSafeOwner]);
 
   const formattedBalance = useMemo(() => {
     if (!snapshot) return "0";
@@ -565,9 +813,11 @@ function App() {
     <div className={styles.app}>
       <div className={styles.inner}>
         <Header
-          contractAddress={CONTRACT_ADDRESS}
+          tokenAddress={CONTRACT_ADDRESS}
+          safeAddress={safeSnapshot?.address ?? snapshot?.owner}
           account={account}
-          isOwner={isOwner}
+          roleLabel={roleLabel}
+          isSafeOwner={isSafeOwner}
           isRefreshing={loadingAction === "refresh"}
           tokenName={snapshot?.name ?? "MyToken"}
           onConnect={connectWallet}
@@ -580,7 +830,8 @@ function App() {
         <OverviewCard
           snapshot={snapshot}
           account={account}
-          isOwner={isOwner}
+          roleLabel={roleLabel}
+          safeSnapshot={safeSnapshot}
           formattedBalance={formattedBalance}
           formattedTotalSupply={formattedTotalSupply}
           formattedClaimAmount={formattedClaimAmount}
@@ -607,9 +858,11 @@ function App() {
               onBurnChange={handleBurnInputChange}
             />
 
-            {isOwner && (
+            {isSafeOwner && (
               <OwnerControls
+                account={account}
                 snapshot={snapshot}
+                safeSnapshot={safeSnapshot}
                 loadingAction={loadingAction}
                 treasuryInput={treasuryInput}
                 feeInput={feeInput}
@@ -626,6 +879,9 @@ function App() {
                 onWhitelistAddressChange={handleWhitelistAddressChange}
                 onWhitelistAllowedChange={handleWhitelistAllowedChange}
                 onApplyWhitelist={handleWhitelist}
+                onConfirmTransaction={handleConfirmTransaction}
+                onRevokeTransaction={handleRevokeTransaction}
+                onExecuteTransaction={handleExecuteTransaction}
               />
             )}
           </section>

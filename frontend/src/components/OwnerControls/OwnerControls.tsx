@@ -1,10 +1,12 @@
 import buttonStyles from "../../styles/Button.module.css";
 import cardStyles from "../../styles/Card.module.css";
-import type { ContractSnapshot } from "../../types";
+import type { ContractSnapshot, SafeSnapshot } from "../../types";
 import styles from "./OwnerControls.module.css";
 
 type OwnerControlsProps = {
+  account: string;
   snapshot: ContractSnapshot | null;
+  safeSnapshot: SafeSnapshot | null;
   loadingAction: string | null;
   treasuryInput: string;
   feeInput: string;
@@ -21,10 +23,15 @@ type OwnerControlsProps = {
   onWhitelistAddressChange: (value: string) => void;
   onWhitelistAllowedChange: (value: boolean) => void;
   onApplyWhitelist: () => void;
+  onConfirmTransaction: (txId: number) => void;
+  onRevokeTransaction: (txId: number) => void;
+  onExecuteTransaction: (txId: number) => void;
 };
 
 export function OwnerControls({
+  account,
   snapshot,
+  safeSnapshot,
   loadingAction,
   treasuryInput,
   feeInput,
@@ -41,11 +48,41 @@ export function OwnerControls({
   onWhitelistAddressChange,
   onWhitelistAllowedChange,
   onApplyWhitelist,
+  onConfirmTransaction,
+  onRevokeTransaction,
+  onExecuteTransaction,
 }: OwnerControlsProps) {
+  const pendingTransactions =
+    safeSnapshot?.transactions.filter((tx) => !tx.executed).sort((a, b) => b.id - a.id) ?? [];
+
   return (
     <article className={cardStyles.card}>
       <div className={cardStyles.cardHeader}>
-        <h2 className={cardStyles.cardHeaderTitle}>Owner Controls</h2>
+        <h2 className={cardStyles.cardHeaderTitle}>Multisig Controls</h2>
+      </div>
+
+      <div className={styles.safeSummary}>
+        <div>
+          <span className={styles.summaryLabel}>Threshold:&nbsp;</span>
+          <span>{safeSnapshot ? `${safeSnapshot.threshold} approvals required` : "-"}</span>
+        </div>
+        <div className={styles.safeOwners}>
+          <span className={styles.summaryLabel}>Owners:</span>
+          <div className={styles.ownerList}>
+            {safeSnapshot?.owners.length
+              ? safeSnapshot.owners.map((owner) => (
+                  <span
+                    key={owner}
+                    className={`${styles.ownerBadge} ${
+                      owner.toLowerCase() === account.toLowerCase() ? styles.ownerBadgeSelf : ""
+                    }`}
+                  >
+                    {owner}
+                  </span>
+                ))
+              : "-"}
+          </div>
+        </div>
       </div>
 
       <div className={styles.body}>
@@ -55,10 +92,11 @@ export function OwnerControls({
             onClick={onPauseToggle}
             disabled={loadingAction === "pause" || loadingAction === "unpause"}
           >
-            {snapshot?.paused ? "Unpause Contract" : "Pause Contract"}
+            {snapshot?.paused ? "Propose Unpause" : "Propose Pause"}
           </button>
           <p className={styles.helper}>
-            Toggle global pause to temporarily stop transfers.
+            Creates a multisig transaction to toggle the global pause once it reaches the required
+            confirmations.
           </p>
         </div>
 
@@ -81,7 +119,7 @@ export function OwnerControls({
             disabled={loadingAction === "treasury"}
             type="button"
           >
-            Save Treasury
+            Propose Treasury Update
           </button>
         </div>
 
@@ -106,7 +144,7 @@ export function OwnerControls({
             disabled={loadingAction === "fee"}
             type="button"
           >
-            Update Fee
+            Propose Fee Update
           </button>
         </div>
 
@@ -129,7 +167,7 @@ export function OwnerControls({
             disabled={loadingAction === "max-transfer"}
             type="button"
           >
-            Set Limit
+            Propose Limit Update
           </button>
         </div>
 
@@ -166,8 +204,74 @@ export function OwnerControls({
             disabled={loadingAction === "whitelist"}
             type="button"
           >
-            Apply Whitelist Update
+            Propose Whitelist Update
           </button>
+        </div>
+
+        <div className={styles.queue}>
+          <div className={styles.queueHeader}>
+            <h3 className={styles.queueTitle}>Pending Transactions</h3>
+            <span className={styles.queueBadge}>{pendingTransactions.length}</span>
+          </div>
+
+          {pendingTransactions.length === 0 ? (
+            <p className={styles.emptyQueue}>No multisig actions queued.</p>
+          ) : (
+            <div className={styles.txList}>
+              {pendingTransactions.map((tx) => {
+                const confirmedByAccount = tx.confirmations.some(
+                  (owner) => owner.toLowerCase() === account.toLowerCase()
+                );
+                const canExecute =
+                  safeSnapshot != null &&
+                  tx.numConfirmations >= safeSnapshot.threshold &&
+                  !tx.executed;
+                return (
+                  <div className={styles.txCard} key={tx.id}>
+                    <div className={styles.txMeta}>
+                      <div className={styles.txHeader}>
+                        <span className={styles.txTitle}>Tx #{tx.id}</span>
+                        <span className={styles.txConfirmations}>
+                          {tx.numConfirmations}/{safeSnapshot?.threshold ?? "-"} approvals
+                        </span>
+                      </div>
+                      <p className={styles.txDescription}>{tx.description}</p>
+                      <div className={styles.txTarget}>
+                        <span className={styles.summaryLabel}>Target:&nbsp;</span>
+                        <span className={styles.mono}>{tx.to}</span>
+                      </div>
+                    </div>
+                    <div className={styles.txActions}>
+                      <button
+                        className={`${buttonStyles.btn} ${buttonStyles.solid}`}
+                        onClick={() => onConfirmTransaction(tx.id)}
+                        disabled={loadingAction === `confirm-${tx.id}` || confirmedByAccount}
+                        type="button"
+                      >
+                        {confirmedByAccount ? "Confirmed" : "Confirm"}
+                      </button>
+                      <button
+                        className={`${buttonStyles.btn} ${buttonStyles.ghost}`}
+                        onClick={() => onRevokeTransaction(tx.id)}
+                        disabled={loadingAction === `revoke-${tx.id}` || !confirmedByAccount}
+                        type="button"
+                      >
+                        Revoke
+                      </button>
+                      <button
+                        className={`${buttonStyles.btn} ${buttonStyles.warning}`}
+                        onClick={() => onExecuteTransaction(tx.id)}
+                        disabled={loadingAction === `execute-${tx.id}` || !canExecute}
+                        type="button"
+                      >
+                        Execute
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
       </div>
     </article>
