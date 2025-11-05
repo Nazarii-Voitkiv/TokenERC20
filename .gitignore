@@ -6,4 +6,5 @@ artifacts
 cache
 frontend/.env
 types
-foundry
+foundry/out/
+foundry/cache/
