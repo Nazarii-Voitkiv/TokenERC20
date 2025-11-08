@@ -8,11 +8,13 @@ type OwnerControlsProps = {
   snapshot: ContractSnapshot | null;
   safeSnapshot: SafeSnapshot | null;
   loadingAction: string | null;
+  airdropAddress?: string;
   treasuryInput: string;
   feeInput: string;
   maxTransferInput: string;
   whitelistAddress: string;
   whitelistAllowed: boolean;
+  merkleRootInput: string;
   onPauseToggle: () => void;
   onTreasuryInputChange: (value: string) => void;
   onSetTreasury: () => void;
@@ -23,6 +25,8 @@ type OwnerControlsProps = {
   onWhitelistAddressChange: (value: string) => void;
   onWhitelistAllowedChange: (value: boolean) => void;
   onApplyWhitelist: () => void;
+  onMerkleRootInputChange: (value: string) => void;
+  onSetMerkleRoot: () => void;
   onConfirmTransaction: (txId: number) => void;
   onRevokeTransaction: (txId: number) => void;
   onExecuteTransaction: (txId: number) => void;
@@ -33,11 +37,13 @@ export function OwnerControls({
   snapshot,
   safeSnapshot,
   loadingAction,
+  airdropAddress,
   treasuryInput,
   feeInput,
   maxTransferInput,
   whitelistAddress,
   whitelistAllowed,
+  merkleRootInput,
   onPauseToggle,
   onTreasuryInputChange,
   onSetTreasury,
@@ -48,12 +54,16 @@ export function OwnerControls({
   onWhitelistAddressChange,
   onWhitelistAllowedChange,
   onApplyWhitelist,
+  onMerkleRootInputChange,
+  onSetMerkleRoot,
   onConfirmTransaction,
   onRevokeTransaction,
   onExecuteTransaction,
 }: OwnerControlsProps) {
   const pendingTransactions =
     safeSnapshot?.transactions.filter((tx) => !tx.executed).sort((a, b) => b.id - a.id) ?? [];
+  const trimmedMerkleRoot = merkleRootInput.trim();
+  const merkleRootValid = /^0x[0-9a-fA-F]{64}$/.test(trimmedMerkleRoot);
 
   return (
     <article className={cardStyles.card}>
@@ -206,6 +216,39 @@ export function OwnerControls({
           >
             Propose Whitelist Update
           </button>
+        </div>
+
+        <div className={styles.form}>
+          <div className={styles.row}>
+            <label className={styles.label} htmlFor="merkle-root">
+              Merkle Root
+            </label>
+            <input
+              id="merkle-root"
+              className={styles.input}
+              placeholder="0x..."
+              value={merkleRootInput}
+              onChange={(event) => onMerkleRootInputChange(event.target.value)}
+              disabled={!airdropAddress}
+            />
+          </div>
+          <button
+            className={`${buttonStyles.btn} ${buttonStyles.solid}`}
+            onClick={onSetMerkleRoot}
+            disabled={
+              !airdropAddress || !merkleRootValid || loadingAction === "merkle-root"
+            }
+            type="button"
+          >
+            Propose Merkle Root Update
+          </button>
+          {!airdropAddress ? (
+            <p className={styles.helper}>Set VITE_AIRDROP_ADDRESS to enable this action.</p>
+          ) : (
+            <p className={styles.helper}>
+              Calls <code>setMerkleRoot</code> on the Merkle airdrop once approved.
+            </p>
+          )}
         </div>
 
         <div className={styles.queue}>

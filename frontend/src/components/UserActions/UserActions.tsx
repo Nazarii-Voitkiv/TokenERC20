@@ -51,7 +51,7 @@ export function UserActions({
         <button
           className={`${buttonStyles.btn} ${buttonStyles.primary}`}
           onClick={onClaim}
-          disabled={hasClaimed || loadingAction === "claim"}
+          disabled={hasClaimed || loadingAction === "faucet-claim"}
         >
           {hasClaimed ? "Already Claimed" : "Claim Free Tokens"}
         </button>

@@ -3,13 +3,23 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ethers } from "ethers";
 import MyToken from "./abi/MyToken.json";
 import MyTokenSafe from "./abi/MyTokenSafe.json";
+import MerkleAirdrop from "./abi/MerkleAirdrop.json";
 import { Header } from "./components/Header/Header";
 import { OverviewCard } from "./components/Overview/OverviewCard";
 import { UserActions } from "./components/UserActions/UserActions";
 import { OwnerControls } from "./components/OwnerControls/OwnerControls";
 import { Toast as ToastBanner } from "./components/Toast/Toast";
+import { AirdropPanel } from "./components/Airdrop/AirdropPanel";
 import styles from "./App.module.css";
-import type { ContractSnapshot, SafeSnapshot, Toast } from "./types";
+import type {
+  AccountClaim,
+  AirdropDataset,
+  AirdropLookupEntry,
+  AirdropSnapshot,
+  ContractSnapshot,
+  SafeSnapshot,
+  Toast,
+} from "./types";
 
 declare global {
   interface Window {
@@ -19,6 +29,8 @@ declare global {
 
 const CONTRACT_ADDRESS = import.meta.env.VITE_CONTRACT_ADDRESS as string;
 const SAFE_ADDRESS = import.meta.env.VITE_SAFE_ADDRESS as string | undefined;
+const AIRDROP_ADDRESS = import.meta.env.VITE_AIRDROP_ADDRESS as string | undefined;
+const AIRDROP_DATA_URL = (import.meta.env.VITE_AIRDROP_DATA_URL as string | undefined) ?? "";
 const ZERO_ADDRESS = ethers.ZeroAddress;
 
 function App() {
@@ -26,7 +38,11 @@ function App() {
   const [snapshot, setSnapshot] = useState<ContractSnapshot | null>(null);
   const [safeSnapshot, setSafeSnapshot] = useState<SafeSnapshot | null>(null);
   const [balance, setBalance] = useState<bigint>(0n);
-  const [hasClaimed, setHasClaimed] = useState<boolean>(false);
+  const [hasFaucetClaimed, setHasFaucetClaimed] = useState<boolean>(false);
+  const [airdropData, setAirdropData] = useState<AirdropDataset | null>(null);
+  const [airdropSnapshot, setAirdropSnapshot] = useState<AirdropSnapshot | null>(null);
+  const [airdropClaim, setAirdropClaim] = useState<AccountClaim | null>(null);
+  const [airdropClaimed, setAirdropClaimed] = useState<boolean>(false);
   const [loadingAction, setLoadingAction] = useState<string | null>(null);
   const [toast, setToast] = useState<Toast | null>(null);
 
@@ -36,12 +52,25 @@ function App() {
   const [feeInput, setFeeInput] = useState<string>("");
   const [maxTransferInput, setMaxTransferInput] = useState<string>("");
   const [whitelistForm, setWhitelistForm] = useState({ address: "", allowed: true });
+  const [merkleRootInput, setMerkleRootInput] = useState<string>("");
 
   const providerRef = useRef<ethers.BrowserProvider | null>(null);
   const tokenMetaRef = useRef({ decimals: 18, symbol: "TOKEN" });
 
+  const airdropLookup = useMemo<Record<string, AirdropLookupEntry>>(() => {
+    if (!airdropData?.lookup) return {};
+    return Object.entries(airdropData.lookup).reduce<Record<string, AirdropLookupEntry>>(
+      (acc, [key, value]) => {
+        acc[key.toLowerCase()] = value;
+        return acc;
+      },
+      {},
+    );
+  }, [airdropData]);
+
   const tokenInterface = useMemo(() => new ethers.Interface(MyToken.abi), []);
   const safeInterface = useMemo(() => new ethers.Interface(MyTokenSafe.abi), []);
+  const airdropInterface = useMemo(() => new ethers.Interface(MerkleAirdrop.abi), []);
 
   const setAlert = useCallback((type: Toast["type"], message: string) => {
     setToast({ type, message });
@@ -78,11 +107,35 @@ function App() {
     setWhitelistForm((prev) => ({ ...prev, allowed: value }));
   }, []);
 
+  const handleMerkleRootInputChange = useCallback((value: string) => {
+    setMerkleRootInput(value);
+  }, []);
+
   useEffect(() => {
     if (!toast) return;
     const timer = window.setTimeout(() => setToast(null), 4000);
     return () => window.clearTimeout(timer);
   }, [toast]);
+
+  const fetchAirdropData = useCallback(async () => {
+    if (!AIRDROP_DATA_URL) {
+      setAirdropData(null);
+      return null;
+    }
+    try {
+      const response = await fetch(AIRDROP_DATA_URL, { cache: "no-store" });
+      if (!response.ok) {
+        throw new Error(`Failed to load airdrop file (${response.status})`);
+      }
+      const payload = (await response.json()) as AirdropDataset;
+      setAirdropData(payload);
+      return payload;
+    } catch (error) {
+      console.error("Cannot load airdrop JSON", error);
+      setAirdropData(null);
+      return null;
+    }
+  }, []);
 
   const getProvider = useCallback(async () => {
     if (!window.ethereum) {
@@ -120,6 +173,23 @@ function App() {
     const provider = await getProvider();
     const signer = await provider.getSigner();
     return new ethers.Contract(SAFE_ADDRESS, MyTokenSafe.abi, signer);
+  }, [getProvider]);
+
+  const getReadAirdropContract = useCallback(async () => {
+    if (!AIRDROP_ADDRESS || !ethers.isAddress(AIRDROP_ADDRESS)) {
+      throw new Error("VITE_AIRDROP_ADDRESS must be configured in the frontend .env");
+    }
+    const provider = await getProvider();
+    return new ethers.Contract(AIRDROP_ADDRESS, MerkleAirdrop.abi, provider);
+  }, [getProvider]);
+
+  const getWriteAirdropContract = useCallback(async () => {
+    if (!AIRDROP_ADDRESS || !ethers.isAddress(AIRDROP_ADDRESS)) {
+      throw new Error("VITE_AIRDROP_ADDRESS must be configured in the frontend .env");
+    }
+    const provider = await getProvider();
+    const signer = await provider.getSigner();
+    return new ethers.Contract(AIRDROP_ADDRESS, MerkleAirdrop.abi, signer);
   }, [getProvider]);
 
   const describeSafeTransaction = useCallback(
@@ -267,6 +337,36 @@ function App() {
     }
   }, [describeSafeTransaction, getReadSafeContract]);
 
+  const fetchAirdropSnapshot = useCallback(async () => {
+    if (!AIRDROP_ADDRESS || !ethers.isAddress(AIRDROP_ADDRESS)) {
+      setAirdropSnapshot(null);
+      return null;
+    }
+
+    try {
+      const [contract, provider] = await Promise.all([getReadAirdropContract(), getProvider()]);
+      const [root, tokenAddr] = await Promise.all([contract.merkleRoot(), contract.token()]);
+      const erc20 = new ethers.Contract(
+        tokenAddr,
+        ["function balanceOf(address account) view returns (uint256)"],
+        provider,
+      );
+      const balance: bigint = await erc20.balanceOf(AIRDROP_ADDRESS);
+      const snapshotData: AirdropSnapshot = {
+        address: AIRDROP_ADDRESS,
+        token: tokenAddr,
+        merkleRoot: root,
+        balance,
+      };
+      setAirdropSnapshot(snapshotData);
+      return snapshotData;
+    } catch (error) {
+      console.error(error);
+      setAirdropSnapshot(null);
+      return null;
+    }
+  }, [AIRDROP_ADDRESS, getProvider, getReadAirdropContract]);
+
   const fetchContractSnapshot = useCallback(async () => {
     try {
       const contract = await getReadContract();
@@ -316,10 +416,63 @@ function App() {
       setFeeInput(feeBps.toString());
       setMaxTransferInput(maxTransfer === 0n ? "" : ethers.formatUnits(maxTransfer, decimals));
       await fetchSafeSnapshot();
+      await fetchAirdropSnapshot();
     } catch (error) {
       console.error(error);
     }
-  }, [fetchSafeSnapshot, getReadContract]);
+  }, [fetchAirdropSnapshot, fetchSafeSnapshot, getReadContract]);
+
+  const resolveAirdropClaim = useCallback(
+    (addr?: string): AccountClaim | null => {
+      if (!addr) return null;
+      try {
+        const checksum = ethers.getAddress(addr);
+        const entry = airdropLookup[checksum.toLowerCase()];
+        if (!entry) {
+          return null;
+        }
+        const amount = BigInt(entry.amount);
+        return {
+          index: entry.index,
+          account: checksum,
+          activityCount: entry.activityCount ?? 0,
+          amount,
+          amountFormatted: ethers.formatUnits(amount, snapshot?.decimals ?? 18),
+          proof: entry.proof ?? [],
+        };
+      } catch (error) {
+        console.error(error);
+        return null;
+      }
+    },
+    [airdropLookup, snapshot?.decimals]
+  );
+
+  const fetchAirdropClaimState = useCallback(
+    async (addr?: string) => {
+      if (!addr) {
+        setAirdropClaim(null);
+        setAirdropClaimed(false);
+        return null;
+      }
+      const claim = resolveAirdropClaim(addr);
+      setAirdropClaim(claim);
+      if (!claim || !AIRDROP_ADDRESS || !ethers.isAddress(AIRDROP_ADDRESS)) {
+        setAirdropClaimed(false);
+        return null;
+      }
+      try {
+        const contract = await getReadAirdropContract();
+        const claimed = await contract.isClaimed(claim.index);
+        setAirdropClaimed(Boolean(claimed));
+        return claimed;
+      } catch (error) {
+        console.error(error);
+        return null;
+      }
+    },
+    [AIRDROP_ADDRESS, getReadAirdropContract, resolveAirdropClaim]
+  );
 
   const fetchAccountState = useCallback(
     async (addr?: string) => {
@@ -332,18 +485,21 @@ function App() {
           contract.hasClaimed(target),
         ]);
         setBalance(bal);
-        setHasClaimed(Boolean(claimed));
+        setHasFaucetClaimed(Boolean(claimed));
+        await fetchAirdropClaimState(target);
       } catch (error) {
         console.error(error);
       }
     },
-    [account, getReadContract]
+    [account, fetchAirdropClaimState, getReadContract]
   );
 
   const resetConnectionState = useCallback(() => {
     setAccount("");
     setBalance(0n);
-    setHasClaimed(false);
+    setHasFaucetClaimed(false);
+    setAirdropClaim(null);
+    setAirdropClaimed(false);
     providerRef.current = null;
   }, []);
 
@@ -504,18 +660,53 @@ function App() {
     [fetchSafeSnapshot, getWriteSafeContract, performAction, setAlert]
   );
 
-  const handleClaim = useCallback(async () => {
+  const handleFaucetClaim = useCallback(async () => {
     if (!snapshot) {
       setAlert("error", "Contract data not loaded");
       return;
     }
-    await performAction("claim", "Claim successful", async () => {
+    await performAction("faucet-claim", "Claim successful", async () => {
       const contract = await getWriteContract();
       const tx = await contract.claimFreeTokens();
       await tx.wait();
       await Promise.all([fetchAccountState(), fetchContractSnapshot()]);
     });
   }, [fetchAccountState, fetchContractSnapshot, getWriteContract, performAction, setAlert, snapshot]);
+
+  const handleAirdropClaim = useCallback(async () => {
+    if (!airdropClaim) {
+      setAlert("error", "No airdrop allocation found for this wallet");
+      return;
+    }
+    if (!AIRDROP_ADDRESS) {
+      setAlert("error", "VITE_AIRDROP_ADDRESS must be set");
+      return;
+    }
+    await performAction("airdrop-claim", "Airdrop claimed", async () => {
+      const contract = await getWriteAirdropContract();
+      const tx = await contract.claim(
+        airdropClaim.index,
+        airdropClaim.account,
+        airdropClaim.amount,
+        airdropClaim.proof,
+      );
+      await tx.wait();
+      await Promise.all([
+        fetchAccountState(),
+        fetchAirdropClaimState(airdropClaim.account),
+        fetchAirdropSnapshot(),
+      ]);
+    });
+  }, [
+    AIRDROP_ADDRESS,
+    airdropClaim,
+    fetchAccountState,
+    fetchAirdropClaimState,
+    fetchAirdropSnapshot,
+    getWriteAirdropContract,
+    performAction,
+    setAlert,
+  ]);
 
   const handlePauseToggle = useCallback(async () => {
     if (!snapshot) {
@@ -661,6 +852,26 @@ function App() {
     );
   }, [setAlert, submitSafeTransaction, tokenInterface, whitelistForm]);
 
+  const handleSetMerkleRoot = useCallback(async () => {
+    if (!AIRDROP_ADDRESS || !ethers.isAddress(AIRDROP_ADDRESS)) {
+      setAlert("error", "VITE_AIRDROP_ADDRESS must be set in the frontend environment");
+      return;
+    }
+    const trimmed = merkleRootInput.trim();
+    if (!/^0x[0-9a-fA-F]{64}$/.test(trimmed)) {
+      setAlert("error", "Enter a 32-byte hex Merkle root (0x + 64 hex chars).");
+      return;
+    }
+    const submittedId = await submitSafeTransaction(
+      "merkle-root",
+      AIRDROP_ADDRESS,
+      airdropInterface.encodeFunctionData("setMerkleRoot", [trimmed]),
+    );
+    if (submittedId != null) {
+      setMerkleRootInput("");
+    }
+  }, [AIRDROP_ADDRESS, airdropInterface, merkleRootInput, setAlert, submitSafeTransaction]);
+
   const handleConfirmTransaction = useCallback(
     async (txId: number) => {
       await performAction(`confirm-${txId}`, "Confirmation sent", async () => {
@@ -699,14 +910,14 @@ function App() {
 
   const handleRefresh = useCallback(async () => {
     await performAction("refresh", "", async () => {
-      await Promise.all([fetchContractSnapshot(), fetchAccountState()]);
+      await Promise.all([fetchContractSnapshot(), fetchAccountState(), fetchAirdropData()]);
     });
-  }, [fetchAccountState, fetchContractSnapshot, performAction]);
+  }, [fetchAccountState, fetchAirdropData, fetchContractSnapshot, performAction]);
 
   useEffect(() => {
     (async () => {
       try {
-        await fetchContractSnapshot();
+        await Promise.all([fetchContractSnapshot(), fetchAirdropData()]);
         if (!window.ethereum) {
           return;
         }
@@ -725,12 +936,17 @@ function App() {
     return () => {
       providerRef.current = null;
     };
-  }, [fetchContractSnapshot, fetchAccountState, getProvider]);
+  }, [fetchAccountState, fetchAirdropData, fetchContractSnapshot, getProvider]);
 
   useEffect(() => {
     if (!account) return;
     fetchAccountState(account);
   }, [account, fetchAccountState]);
+
+  useEffect(() => {
+    if (!account) return;
+    fetchAirdropClaimState(account);
+  }, [account, fetchAirdropClaimState, airdropLookup]);
 
   useEffect(() => {
     if (!account || !window.ethereum?.on) {
@@ -843,7 +1059,7 @@ function App() {
           <section className={styles.cardGrid}>
             <UserActions
               symbol={tokenSymbol}
-              hasClaimed={hasClaimed}
+              hasClaimed={hasFaucetClaimed}
               loadingAction={loadingAction}
               transferForm={transferForm}
               burnAmount={burnAmount}
@@ -851,12 +1067,25 @@ function App() {
               burnDisabledReason={burnValidation.reason}
               isTransferDisabled={loadingAction === "transfer" || transferValidation.disabled}
               isBurnDisabled={loadingAction === "burn" || burnValidation.disabled}
-              onClaim={handleClaim}
+              onClaim={handleFaucetClaim}
               onTransferSubmit={handleTransfer}
               onBurnSubmit={handleBurn}
               onTransferChange={handleTransferFormChange}
               onBurnChange={handleBurnInputChange}
             />
+            {AIRDROP_ADDRESS && (
+              <AirdropPanel
+                symbol={tokenSymbol}
+                decimals={snapshot?.decimals}
+                snapshot={airdropSnapshot}
+                data={airdropData}
+                claim={airdropClaim}
+                isClaimed={airdropClaimed}
+                loadingAction={loadingAction}
+                onClaim={handleAirdropClaim}
+                dataSource={AIRDROP_DATA_URL}
+              />
+            )}
 
             {isSafeOwner && (
               <OwnerControls
@@ -864,11 +1093,13 @@ function App() {
                 snapshot={snapshot}
                 safeSnapshot={safeSnapshot}
                 loadingAction={loadingAction}
+                airdropAddress={AIRDROP_ADDRESS}
                 treasuryInput={treasuryInput}
                 feeInput={feeInput}
                 maxTransferInput={maxTransferInput}
                 whitelistAddress={whitelistForm.address}
                 whitelistAllowed={whitelistForm.allowed}
+                merkleRootInput={merkleRootInput}
                 onPauseToggle={handlePauseToggle}
                 onTreasuryInputChange={handleTreasuryInputChange}
                 onSetTreasury={handleSetTreasury}
@@ -879,6 +1110,8 @@ function App() {
                 onWhitelistAddressChange={handleWhitelistAddressChange}
                 onWhitelistAllowedChange={handleWhitelistAllowedChange}
                 onApplyWhitelist={handleWhitelist}
+                onMerkleRootInputChange={handleMerkleRootInputChange}
+                onSetMerkleRoot={handleSetMerkleRoot}
                 onConfirmTransaction={handleConfirmTransaction}
                 onRevokeTransaction={handleRevokeTransaction}
                 onExecuteTransaction={handleExecuteTransaction}

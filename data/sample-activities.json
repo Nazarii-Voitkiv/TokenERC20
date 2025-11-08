@@ -1,0 +1,20 @@
+[
+  {
+    "address": "0xdD2FD4581271e230360230F9337D5c0430Bf44C0",
+    "activityCount": 12
+  },
+  {
+    "address": "0x8626f6940E2eb28930eFb4CeF49B2d1F2C9C1199",
+    "activities": ["swap", "swap", "bridge", "nft_mint", "vote"]
+  },
+  {
+    "address": "0x71bE63f3384f5fb98995898A86B02Fb2426c5788",
+    "activityLog": [
+      { "weight": 3 },
+      2,
+      "stake",
+      "lend"
+    ],
+    "bonus": 1
+  }
+]

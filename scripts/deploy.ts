@@ -2,6 +2,7 @@ import hre from "hardhat";
 
 const DEFAULT_INITIAL_SUPPLY = 1_000_000n;
 const DEFAULT_CLAIM_AMOUNT = 100n;
+const ZERO_BYTES32 = `0x${"00".repeat(32)}`;
 
 function parseOwners(rawOwners: string | undefined) {
   if (!rawOwners) return [];
@@ -34,6 +35,17 @@ function parseUint(rawValue: string | undefined, fallback: bigint, label: string
   } catch {
     throw new Error(`Invalid ${label}=${rawValue}. Expected a positive integer.`);
   }
+}
+
+function parseMerkleRoot(rawRoot: string | undefined) {
+  if (!rawRoot) return ZERO_BYTES32;
+  const normalized = rawRoot.trim();
+  if (!/^0x[0-9a-fA-F]{64}$/.test(normalized)) {
+    throw new Error(
+      `Invalid AIRDROP_MERKLE_ROOT=${rawRoot}. Expected a 32-byte hex string like 0xabc...`,
+    );
+  }
+  return normalized;
 }
 
 async function main() {
@@ -72,6 +84,12 @@ async function main() {
     DEFAULT_CLAIM_AMOUNT,
     "TOKEN_CLAIM_AMOUNT",
   );
+  const airdropReserveWhole = parseUint(
+    process.env.AIRDROP_RESERVE,
+    0n,
+    "AIRDROP_RESERVE",
+  );
+  const merkleRoot = parseMerkleRoot(process.env.AIRDROP_MERKLE_ROOT);
 
   const tokenName = process.env.TOKEN_NAME ?? "MyToken";
   const tokenSymbol = process.env.TOKEN_SYMBOL ?? "MTK";
@@ -96,8 +114,30 @@ async function main() {
   const ownershipTx = await token.transferOwnership(safeAddress);
   await ownershipTx.wait();
 
+  const decimals = await token.decimals();
+  const scale = 10n ** BigInt(decimals);
+  const airdropReserveRaw = airdropReserveWhole * scale;
+
+  const airdrop = await ethers.deployContract("MerkleAirdrop", [
+    await token.getAddress(),
+    merkleRoot,
+    safeAddress,
+  ]);
+  await airdrop.waitForDeployment();
+  const airdropAddress = await airdrop.getAddress();
+
+  if (airdropReserveRaw > 0n) {
+    const fundingTx = await token.transfer(airdropAddress, airdropReserveRaw);
+    await fundingTx.wait();
+    console.log(
+      `Seeded MerkleAirdrop with ${airdropReserveWhole.toString()} whole tokens (${airdropReserveRaw} raw units)`,
+    );
+  }
+
   console.log("MyToken deployed to:", await token.getAddress());
   console.log("MyTokenSafe deployed to:", safeAddress);
+  console.log("MerkleAirdrop deployed to:", airdropAddress);
+  console.log("Configured Merkle root:", merkleRoot);
   console.log("Ownership of MyToken transferred to MyTokenSafe multisig.");
 }
 
