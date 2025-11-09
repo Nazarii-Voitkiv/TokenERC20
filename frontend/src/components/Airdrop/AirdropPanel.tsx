@@ -18,6 +18,9 @@ type AirdropPanelProps = {
   loadingAction: string | null;
   onClaim: () => void;
   dataSource?: string;
+  plannedTotal: string;
+  remainingTotal: string;
+  claimedTotal: string;
 };
 
 export function AirdropPanel({
@@ -30,6 +33,9 @@ export function AirdropPanel({
   loadingAction,
   onClaim,
   dataSource,
+  plannedTotal,
+  remainingTotal,
+  claimedTotal,
 }: AirdropPanelProps) {
   const contractRoot = snapshot?.merkleRoot ?? "—";
   const fileRoot = data?.merkleRoot ?? "—";
@@ -41,7 +47,8 @@ export function AirdropPanel({
   const balanceLabel = snapshot
     ? ethers.formatUnits(snapshot.balance, tokenDecimals)
     : "0";
-  const totalAllocated = data?.totals?.totalAllocatedFormatted ?? "0";
+  const totalAllocated =
+    plannedTotal ?? `${data?.totals?.totalAllocatedFormatted ?? "0"} ${symbol ?? ""}`.trim();
   const recipients = data?.totals?.uniqueAccounts ?? 0;
   const totalActivity = data?.totals?.totalActivity ?? 0;
 
@@ -100,16 +107,16 @@ export function AirdropPanel({
           <p className={styles.value}>{totalActivity}</p>
         </div>
         <div>
-          <p className={styles.label}>Total allocated</p>
-          <p className={styles.value}>
-            {totalAllocated} {symbol ?? ""}
-          </p>
+          <p className={styles.label}>Planned allocation</p>
+          <p className={styles.value}>{totalAllocated}</p>
         </div>
         <div>
-          <p className={styles.label}>Contract balance</p>
-          <p className={styles.value}>
-            {balanceLabel} {symbol ?? ""}
-          </p>
+          <p className={styles.label}>Claimed so far</p>
+          <p className={styles.value}>{claimedTotal}</p>
+        </div>
+        <div>
+          <p className={styles.label}>Remaining allocation</p>
+          <p className={styles.value}>{remainingTotal || balanceLabel}</p>
         </div>
       </div>
 

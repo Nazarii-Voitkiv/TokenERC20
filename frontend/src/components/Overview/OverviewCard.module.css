@@ -8,13 +8,13 @@
 }
 
 .statusActive {
-  background: rgba(74, 222, 128, 0.15);
-  color: #bbf7d0;
+  background: var(--color-success-bg);
+  color: var(--color-success-text);
 }
 
 .statusPaused {
-  background: rgba(248, 113, 113, 0.18);
-  color: #fecaca;
+  background: var(--color-danger-bg);
+  color: var(--color-danger-text);
 }
 
 .statsGrid {
@@ -26,8 +26,8 @@
 .statCard {
   padding: 1.1rem 1.2rem;
   border-radius: 1rem;
-  background: rgba(30, 41, 59, 0.65);
-  border: 1px solid rgba(148, 163, 184, 0.2);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
   display: flex;
   flex-direction: column;
   gap: 0.45rem;
@@ -37,13 +37,13 @@
   font-size: 0.8rem;
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  color: rgba(226, 232, 240, 0.65);
+  color: var(--color-text-muted);
 }
 
 .statValue {
   font-size: 1.1rem;
   font-weight: 600;
-  color: #f8fafc;
+  color: var(--color-text);
   word-break: break-word;
 }
 

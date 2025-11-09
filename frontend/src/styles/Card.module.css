@@ -1,9 +1,9 @@
 .card {
-  background: rgba(15, 23, 42, 0.78);
-  border: 1px solid rgba(148, 163, 184, 0.15);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
   border-radius: 1.4rem;
   padding: 1.6rem;
-  box-shadow: 0 25px 45px rgba(2, 6, 23, 0.35);
+  box-shadow: 0 25px 45px var(--color-shadow-strong);
   backdrop-filter: blur(22px);
 }
 
@@ -19,4 +19,5 @@
   margin: 0;
   font-size: 1.3rem;
   font-weight: 600;
+  color: var(--color-text);
 }

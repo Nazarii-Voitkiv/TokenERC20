@@ -1,0 +1,538 @@
+{
+  "generatedAt": "2025-11-09T19:24:06.924Z",
+  "inputFile": "/Users/nazarii/Repositories/MyTokenERC20/data/sample-activities.json",
+  "rewardPerActivity": "25",
+  "decimals": 18,
+  "minActivity": 1,
+  "merkleRoot": "0x6fab233722427b8ffc341c681e5f74306c47b8de1250d1aff2c3fd521b955824",
+  "totals": {
+    "uniqueAccounts": 20,
+    "totalActivity": 336,
+    "totalAllocated": "8400000000000000000000",
+    "totalAllocatedFormatted": "8400.0"
+  },
+  "claims": [
+    {
+      "index": 0,
+      "account": "0x14dC79964da2C08b23698B3D3cc7Ca32193d9955",
+      "activityCount": 23,
+      "amount": "575000000000000000000",
+      "amountFormatted": "575.0",
+      "proof": [
+        "0x18fbd6c8a0bfe745739de0005a1b3ce0ccc99a24737bd10fdc758bfe463264a6",
+        "0xa629be39bd251fee94bf1f899de13d55d73dd9c9f58fcbb49a88f850005b2058",
+        "0x072c0ce9938ab3a65a994768ad9cca02fad615fb2b0528f2d91015259f55d6fc",
+        "0xae54f5a2a364e7c9e61c50785036de4e5a9e02a0f3f02cf603f3a299c0536941",
+        "0x08bff678885015d85b69343441b6ed8d0498ce0014fa99f607ee43444c4bca51"
+      ]
+    },
+    {
+      "index": 1,
+      "account": "0x15d34AAf54267DB7D7c367839AAf71A00a2C6A65",
+      "activityCount": 19,
+      "amount": "475000000000000000000",
+      "amountFormatted": "475.0",
+      "proof": [
+        "0x87f041914def62dc286d82b0561bac2c5b9ce829167e259e896fa3bb52c1783f",
+        "0xa629be39bd251fee94bf1f899de13d55d73dd9c9f58fcbb49a88f850005b2058",
+        "0x072c0ce9938ab3a65a994768ad9cca02fad615fb2b0528f2d91015259f55d6fc",
+        "0xae54f5a2a364e7c9e61c50785036de4e5a9e02a0f3f02cf603f3a299c0536941",
+        "0x08bff678885015d85b69343441b6ed8d0498ce0014fa99f607ee43444c4bca51"
+      ]
+    },
+    {
+      "index": 2,
+      "account": "0x1CBd3b2770909D4e10f157cABC84C7264073C9Ec",
+      "activityCount": 12,
+      "amount": "300000000000000000000",
+      "amountFormatted": "300.0",
+      "proof": [
+        "0x329442054aa6743efd8ca460e80f883eedd9a7a22160d0f75a78676202d200f5",
+        "0xb7b178f0a02d34a3dd34a440905f2a904e2fed30cdbb40550f320f3e5c37193c",
+        "0x072c0ce9938ab3a65a994768ad9cca02fad615fb2b0528f2d91015259f55d6fc",
+        "0xae54f5a2a364e7c9e61c50785036de4e5a9e02a0f3f02cf603f3a299c0536941",
+        "0x08bff678885015d85b69343441b6ed8d0498ce0014fa99f607ee43444c4bca51"
+      ]
+    },
+    {
+      "index": 3,
+      "account": "0x23618e81E3f5cdF7f54C3d65f7FBc0aBf5B21E8f",
+      "activityCount": 23,
+      "amount": "575000000000000000000",
+      "amountFormatted": "575.0",
+      "proof": [
+        "0x32b6f1487005cff4d93dcc713e35df0621955c1f0716a90ae17570f03e9707bd",
+        "0xb7b178f0a02d34a3dd34a440905f2a904e2fed30cdbb40550f320f3e5c37193c",
+        "0x072c0ce9938ab3a65a994768ad9cca02fad615fb2b0528f2d91015259f55d6fc",
+        "0xae54f5a2a364e7c9e61c50785036de4e5a9e02a0f3f02cf603f3a299c0536941",
+        "0x08bff678885015d85b69343441b6ed8d0498ce0014fa99f607ee43444c4bca51"
+      ]
+    },
+    {
+      "index": 4,
+      "account": "0x2546BcD3c84621e976D8185a91A922aE77ECEc30",
+      "activityCount": 4,
+      "amount": "100000000000000000000",
+      "amountFormatted": "100.0",
+      "proof": [
+        "0x81db21cbf728532a3a169618bc50d8bdcc8b2a010dbe419972db4e7e40054a59",
+        "0x0aa0995bece017e56a7377f955c0055f2aba5c108895f39003119f098075882e",
+        "0xa07134747cad7dd078f3c7969381dd777f7622956e0280644de145cfa1788978",
+        "0xae54f5a2a364e7c9e61c50785036de4e5a9e02a0f3f02cf603f3a299c0536941",
+        "0x08bff678885015d85b69343441b6ed8d0498ce0014fa99f607ee43444c4bca51"
+      ]
+    },
+    {
+      "index": 5,
+      "account": "0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC",
+      "activityCount": 32,
+      "amount": "800000000000000000000",
+      "amountFormatted": "800.0",
+      "proof": [
+        "0xc3a33e9b8d0249ce84534034fddbd5f9ae85380c3bc4d1c4a6a779f6cc9945f8",
+        "0x0aa0995bece017e56a7377f955c0055f2aba5c108895f39003119f098075882e",
+        "0xa07134747cad7dd078f3c7969381dd777f7622956e0280644de145cfa1788978",
+        "0xae54f5a2a364e7c9e61c50785036de4e5a9e02a0f3f02cf603f3a299c0536941",
+        "0x08bff678885015d85b69343441b6ed8d0498ce0014fa99f607ee43444c4bca51"
+      ]
+    },
+    {
+      "index": 6,
+      "account": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8",
+      "activityCount": 6,
+      "amount": "150000000000000000000",
+      "amountFormatted": "150.0",
+      "proof": [
+        "0xddab1946929509e099e67f9de20d99e56ac6bd0df97ec2de858a766588c242ae",
+        "0xfde6e74c9052d72eda4a73c27d2ee6f160dae463db8759c596ea0c8752a625b1",
+        "0xa07134747cad7dd078f3c7969381dd777f7622956e0280644de145cfa1788978",
+        "0xae54f5a2a364e7c9e61c50785036de4e5a9e02a0f3f02cf603f3a299c0536941",
+        "0x08bff678885015d85b69343441b6ed8d0498ce0014fa99f607ee43444c4bca51"
+      ]
+    },
+    {
+      "index": 7,
+      "account": "0x71bE63f3384f5fb98995898A86B02Fb2426c5788",
+      "activityCount": 12,
+      "amount": "300000000000000000000",
+      "amountFormatted": "300.0",
+      "proof": [
+        "0x791843fc2c509a446a6af924a64d5313c1a7076a52b137c4ed74fca710f9a887",
+        "0xfde6e74c9052d72eda4a73c27d2ee6f160dae463db8759c596ea0c8752a625b1",
+        "0xa07134747cad7dd078f3c7969381dd777f7622956e0280644de145cfa1788978",
+        "0xae54f5a2a364e7c9e61c50785036de4e5a9e02a0f3f02cf603f3a299c0536941",
+        "0x08bff678885015d85b69343441b6ed8d0498ce0014fa99f607ee43444c4bca51"
+      ]
+    },
+    {
+      "index": 8,
+      "account": "0x8626f6940E2eb28930eFb4CeF49B2d1F2C9C1199",
+      "activityCount": 6,
+      "amount": "150000000000000000000",
+      "amountFormatted": "150.0",
+      "proof": [
+        "0x5cdeddd50a4daff6f205225dffd7e46ea7ffb26e86abaa695346ec7ea7559b7e",
+        "0xca15527fe28838987ff3ca0346d628ec3bb259b9ce081a2cc3a06b57e1d21d9e",
+        "0x9a9fffad4796ab30728e9433a02ec958546fe8c71e9048c351282e71aa59eed7",
+        "0x7fce6dd8ac039a3f18d7327aefa43d0b8c6aa0b0aaba305e5d0f2d24ef8426b1",
+        "0x08bff678885015d85b69343441b6ed8d0498ce0014fa99f607ee43444c4bca51"
+      ]
+    },
+    {
+      "index": 9,
+      "account": "0x90F79bf6EB2c4f870365E785982E1f101E93b906",
+      "activityCount": 12,
+      "amount": "300000000000000000000",
+      "amountFormatted": "300.0",
+      "proof": [
+        "0xfa59669f9582e184834c4f447d8fe4325a671cbcb3b09711af2471408996384e",
+        "0xca15527fe28838987ff3ca0346d628ec3bb259b9ce081a2cc3a06b57e1d21d9e",
+        "0x9a9fffad4796ab30728e9433a02ec958546fe8c71e9048c351282e71aa59eed7",
+        "0x7fce6dd8ac039a3f18d7327aefa43d0b8c6aa0b0aaba305e5d0f2d24ef8426b1",
+        "0x08bff678885015d85b69343441b6ed8d0498ce0014fa99f607ee43444c4bca51"
+      ]
+    },
+    {
+      "index": 10,
+      "account": "0x976EA74026E726554dB657fA54763abd0C3a0aa9",
+      "activityCount": 17,
+      "amount": "425000000000000000000",
+      "amountFormatted": "425.0",
+      "proof": [
+        "0xa29136af5f3f2ffb04dddfb64faf08214fd90b73b47dc9055939e43d94faf20a",
+        "0x4e1436f1536b407e6fd6917d5744c89ca63a2f35bcda1390e4d87340a83937a6",
+        "0x9a9fffad4796ab30728e9433a02ec958546fe8c71e9048c351282e71aa59eed7",
+        "0x7fce6dd8ac039a3f18d7327aefa43d0b8c6aa0b0aaba305e5d0f2d24ef8426b1",
+        "0x08bff678885015d85b69343441b6ed8d0498ce0014fa99f607ee43444c4bca51"
+      ]
+    },
+    {
+      "index": 11,
+      "account": "0x9965507D1a55bcC2695C58ba16FB37d819B0A4dc",
+      "activityCount": 6,
+      "amount": "150000000000000000000",
+      "amountFormatted": "150.0",
+      "proof": [
+        "0xd4eeff9da6161c5420a2f62b7bdbc9069b717410515a8dc7f4c2f2b86b730263",
+        "0x4e1436f1536b407e6fd6917d5744c89ca63a2f35bcda1390e4d87340a83937a6",
+        "0x9a9fffad4796ab30728e9433a02ec958546fe8c71e9048c351282e71aa59eed7",
+        "0x7fce6dd8ac039a3f18d7327aefa43d0b8c6aa0b0aaba305e5d0f2d24ef8426b1",
+        "0x08bff678885015d85b69343441b6ed8d0498ce0014fa99f607ee43444c4bca51"
+      ]
+    },
+    {
+      "index": 12,
+      "account": "0xBcd4042DE499D14e55001CcbB24a551F3b954096",
+      "activityCount": 15,
+      "amount": "375000000000000000000",
+      "amountFormatted": "375.0",
+      "proof": [
+        "0x4d418dc68c764f6c5613d5b52b037c7afeb47a188ea45e24bf167bfd74dffd8d",
+        "0xe5336fc5fdc1c44a1793bf432b30917ac5b8b2974a1d256de124b89981a22dcf",
+        "0x86e9ec7c42a334ce926bdb28d27b187597bb2b02b9f62f9d3526d2037e97b162",
+        "0x7fce6dd8ac039a3f18d7327aefa43d0b8c6aa0b0aaba305e5d0f2d24ef8426b1",
+        "0x08bff678885015d85b69343441b6ed8d0498ce0014fa99f607ee43444c4bca51"
+      ]
+    },
+    {
+      "index": 13,
+      "account": "0xFABB0ac9d68B0B445fB7357272Ff202C5651694a",
+      "activityCount": 9,
+      "amount": "225000000000000000000",
+      "amountFormatted": "225.0",
+      "proof": [
+        "0xf5576c1239d28a65dc3bf325d2d6d3138361e049394da3fd2ad3adc0f6fc7cc5",
+        "0xe5336fc5fdc1c44a1793bf432b30917ac5b8b2974a1d256de124b89981a22dcf",
+        "0x86e9ec7c42a334ce926bdb28d27b187597bb2b02b9f62f9d3526d2037e97b162",
+        "0x7fce6dd8ac039a3f18d7327aefa43d0b8c6aa0b0aaba305e5d0f2d24ef8426b1",
+        "0x08bff678885015d85b69343441b6ed8d0498ce0014fa99f607ee43444c4bca51"
+      ]
+    },
+    {
+      "index": 14,
+      "account": "0xa0Ee7A142d267C1f36714E4a8F75612F20a79720",
+      "activityCount": 8,
+      "amount": "200000000000000000000",
+      "amountFormatted": "200.0",
+      "proof": [
+        "0x29d47596007ec89b32795ad3fea56e7c82207f2fedfb46fcfed255c7fe4c944e",
+        "0x3ff19096274a164928387e15cc2b7d5b7c634bae62220ac86972f000eaec2578",
+        "0x86e9ec7c42a334ce926bdb28d27b187597bb2b02b9f62f9d3526d2037e97b162",
+        "0x7fce6dd8ac039a3f18d7327aefa43d0b8c6aa0b0aaba305e5d0f2d24ef8426b1",
+        "0x08bff678885015d85b69343441b6ed8d0498ce0014fa99f607ee43444c4bca51"
+      ]
+    },
+    {
+      "index": 15,
+      "account": "0xbDA5747bFD65F08deb54cb465eB87D40e51B197E",
+      "activityCount": 33,
+      "amount": "825000000000000000000",
+      "amountFormatted": "825.0",
+      "proof": [
+        "0x58592ac298405373ec583bee69ecded5c22391147dae73fd48c3ac5e3bd6b70c",
+        "0x3ff19096274a164928387e15cc2b7d5b7c634bae62220ac86972f000eaec2578",
+        "0x86e9ec7c42a334ce926bdb28d27b187597bb2b02b9f62f9d3526d2037e97b162",
+        "0x7fce6dd8ac039a3f18d7327aefa43d0b8c6aa0b0aaba305e5d0f2d24ef8426b1",
+        "0x08bff678885015d85b69343441b6ed8d0498ce0014fa99f607ee43444c4bca51"
+      ]
+    },
+    {
+      "index": 16,
+      "account": "0xcd3B766CCDd6AE721141F452C550Ca635964ce71",
+      "activityCount": 16,
+      "amount": "400000000000000000000",
+      "amountFormatted": "400.0",
+      "proof": [
+        "0xcb3bc811693ae31429d9a2690dcf0cdff1bbf80427cd544c2cd2669431852f90",
+        "0x55de205d822751822d752d52f26f3521c921f04a96e94c3a3ea208203f4ce6cb",
+        "0x2a4e478f73ea25f196b58dfe54910cbf62ee6c0eafadf9ff1b1bcd28b0e8856e",
+        "0x1d8a34bc9d7fdb013c532c2d5e8bcf4986f26378abd4a91d10a15a0726d3b7c6",
+        "0xf544abd0231e3d56f89641f718005717ab4bb300aa1e6d0e696a49a101743d93"
+      ]
+    },
+    {
+      "index": 17,
+      "account": "0xdD2FD4581271e230360230F9337D5c0430Bf44C0",
+      "activityCount": 30,
+      "amount": "750000000000000000000",
+      "amountFormatted": "750.0",
+      "proof": [
+        "0x245d37bb29be0da4fa719c3dbecb57990e99be609af780c5b7939da11cfb0729",
+        "0x55de205d822751822d752d52f26f3521c921f04a96e94c3a3ea208203f4ce6cb",
+        "0x2a4e478f73ea25f196b58dfe54910cbf62ee6c0eafadf9ff1b1bcd28b0e8856e",
+        "0x1d8a34bc9d7fdb013c532c2d5e8bcf4986f26378abd4a91d10a15a0726d3b7c6",
+        "0xf544abd0231e3d56f89641f718005717ab4bb300aa1e6d0e696a49a101743d93"
+      ]
+    },
+    {
+      "index": 18,
+      "account": "0xdF3e18d64BC6A983f673Ab319CCaE4f1a57C7097",
+      "activityCount": 13,
+      "amount": "325000000000000000000",
+      "amountFormatted": "325.0",
+      "proof": [
+        "0x7419eca176ee62b8a332b11aaaacc0577b9c93a50f19836db0507759efca62db",
+        "0xc7900602c1d89fbde48541c43259d2717d8e526c46169a7e1c8964d94be364d9",
+        "0x2a4e478f73ea25f196b58dfe54910cbf62ee6c0eafadf9ff1b1bcd28b0e8856e",
+        "0x1d8a34bc9d7fdb013c532c2d5e8bcf4986f26378abd4a91d10a15a0726d3b7c6",
+        "0xf544abd0231e3d56f89641f718005717ab4bb300aa1e6d0e696a49a101743d93"
+      ]
+    },
+    {
+      "index": 19,
+      "account": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
+      "activityCount": 40,
+      "amount": "1000000000000000000000",
+      "amountFormatted": "1000.0",
+      "proof": [
+        "0xfc4b3cc62ef322f6c0ce1bf04112fbe228b0769663014403ae574d0f49b61f2d",
+        "0xc7900602c1d89fbde48541c43259d2717d8e526c46169a7e1c8964d94be364d9",
+        "0x2a4e478f73ea25f196b58dfe54910cbf62ee6c0eafadf9ff1b1bcd28b0e8856e",
+        "0x1d8a34bc9d7fdb013c532c2d5e8bcf4986f26378abd4a91d10a15a0726d3b7c6",
+        "0xf544abd0231e3d56f89641f718005717ab4bb300aa1e6d0e696a49a101743d93"
+      ]
+    }
+  ],
+  "lookup": {
+    "0x14dC79964da2C08b23698B3D3cc7Ca32193d9955": {
+      "index": 0,
+      "activityCount": 23,
+      "amount": "575000000000000000000",
+      "proof": [
+        "0x18fbd6c8a0bfe745739de0005a1b3ce0ccc99a24737bd10fdc758bfe463264a6",
+        "0xa629be39bd251fee94bf1f899de13d55d73dd9c9f58fcbb49a88f850005b2058",
+        "0x072c0ce9938ab3a65a994768ad9cca02fad615fb2b0528f2d91015259f55d6fc",
+        "0xae54f5a2a364e7c9e61c50785036de4e5a9e02a0f3f02cf603f3a299c0536941",
+        "0x08bff678885015d85b69343441b6ed8d0498ce0014fa99f607ee43444c4bca51"
+      ]
+    },
+    "0x15d34AAf54267DB7D7c367839AAf71A00a2C6A65": {
+      "index": 1,
+      "activityCount": 19,
+      "amount": "475000000000000000000",
+      "proof": [
+        "0x87f041914def62dc286d82b0561bac2c5b9ce829167e259e896fa3bb52c1783f",
+        "0xa629be39bd251fee94bf1f899de13d55d73dd9c9f58fcbb49a88f850005b2058",
+        "0x072c0ce9938ab3a65a994768ad9cca02fad615fb2b0528f2d91015259f55d6fc",
+        "0xae54f5a2a364e7c9e61c50785036de4e5a9e02a0f3f02cf603f3a299c0536941",
+        "0x08bff678885015d85b69343441b6ed8d0498ce0014fa99f607ee43444c4bca51"
+      ]
+    },
+    "0x1CBd3b2770909D4e10f157cABC84C7264073C9Ec": {
+      "index": 2,
+      "activityCount": 12,
+      "amount": "300000000000000000000",
+      "proof": [
+        "0x329442054aa6743efd8ca460e80f883eedd9a7a22160d0f75a78676202d200f5",
+        "0xb7b178f0a02d34a3dd34a440905f2a904e2fed30cdbb40550f320f3e5c37193c",
+        "0x072c0ce9938ab3a65a994768ad9cca02fad615fb2b0528f2d91015259f55d6fc",
+        "0xae54f5a2a364e7c9e61c50785036de4e5a9e02a0f3f02cf603f3a299c0536941",
+        "0x08bff678885015d85b69343441b6ed8d0498ce0014fa99f607ee43444c4bca51"
+      ]
+    },
+    "0x23618e81E3f5cdF7f54C3d65f7FBc0aBf5B21E8f": {
+      "index": 3,
+      "activityCount": 23,
+      "amount": "575000000000000000000",
+      "proof": [
+        "0x32b6f1487005cff4d93dcc713e35df0621955c1f0716a90ae17570f03e9707bd",
+        "0xb7b178f0a02d34a3dd34a440905f2a904e2fed30cdbb40550f320f3e5c37193c",
+        "0x072c0ce9938ab3a65a994768ad9cca02fad615fb2b0528f2d91015259f55d6fc",
+        "0xae54f5a2a364e7c9e61c50785036de4e5a9e02a0f3f02cf603f3a299c0536941",
+        "0x08bff678885015d85b69343441b6ed8d0498ce0014fa99f607ee43444c4bca51"
+      ]
+    },
+    "0x2546BcD3c84621e976D8185a91A922aE77ECEc30": {
+      "index": 4,
+      "activityCount": 4,
+      "amount": "100000000000000000000",
+      "proof": [
+        "0x81db21cbf728532a3a169618bc50d8bdcc8b2a010dbe419972db4e7e40054a59",
+        "0x0aa0995bece017e56a7377f955c0055f2aba5c108895f39003119f098075882e",
+        "0xa07134747cad7dd078f3c7969381dd777f7622956e0280644de145cfa1788978",
+        "0xae54f5a2a364e7c9e61c50785036de4e5a9e02a0f3f02cf603f3a299c0536941",
+        "0x08bff678885015d85b69343441b6ed8d0498ce0014fa99f607ee43444c4bca51"
+      ]
+    },
+    "0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC": {
+      "index": 5,
+      "activityCount": 32,
+      "amount": "800000000000000000000",
+      "proof": [
+        "0xc3a33e9b8d0249ce84534034fddbd5f9ae85380c3bc4d1c4a6a779f6cc9945f8",
+        "0x0aa0995bece017e56a7377f955c0055f2aba5c108895f39003119f098075882e",
+        "0xa07134747cad7dd078f3c7969381dd777f7622956e0280644de145cfa1788978",
+        "0xae54f5a2a364e7c9e61c50785036de4e5a9e02a0f3f02cf603f3a299c0536941",
+        "0x08bff678885015d85b69343441b6ed8d0498ce0014fa99f607ee43444c4bca51"
+      ]
+    },
+    "0x70997970C51812dc3A010C7d01b50e0d17dc79C8": {
+      "index": 6,
+      "activityCount": 6,
+      "amount": "150000000000000000000",
+      "proof": [
+        "0xddab1946929509e099e67f9de20d99e56ac6bd0df97ec2de858a766588c242ae",
+        "0xfde6e74c9052d72eda4a73c27d2ee6f160dae463db8759c596ea0c8752a625b1",
+        "0xa07134747cad7dd078f3c7969381dd777f7622956e0280644de145cfa1788978",
+        "0xae54f5a2a364e7c9e61c50785036de4e5a9e02a0f3f02cf603f3a299c0536941",
+        "0x08bff678885015d85b69343441b6ed8d0498ce0014fa99f607ee43444c4bca51"
+      ]
+    },
+    "0x71bE63f3384f5fb98995898A86B02Fb2426c5788": {
+      "index": 7,
+      "activityCount": 12,
+      "amount": "300000000000000000000",
+      "proof": [
+        "0x791843fc2c509a446a6af924a64d5313c1a7076a52b137c4ed74fca710f9a887",
+        "0xfde6e74c9052d72eda4a73c27d2ee6f160dae463db8759c596ea0c8752a625b1",
+        "0xa07134747cad7dd078f3c7969381dd777f7622956e0280644de145cfa1788978",
+        "0xae54f5a2a364e7c9e61c50785036de4e5a9e02a0f3f02cf603f3a299c0536941",
+        "0x08bff678885015d85b69343441b6ed8d0498ce0014fa99f607ee43444c4bca51"
+      ]
+    },
+    "0x8626f6940E2eb28930eFb4CeF49B2d1F2C9C1199": {
+      "index": 8,
+      "activityCount": 6,
+      "amount": "150000000000000000000",
+      "proof": [
+        "0x5cdeddd50a4daff6f205225dffd7e46ea7ffb26e86abaa695346ec7ea7559b7e",
+        "0xca15527fe28838987ff3ca0346d628ec3bb259b9ce081a2cc3a06b57e1d21d9e",
+        "0x9a9fffad4796ab30728e9433a02ec958546fe8c71e9048c351282e71aa59eed7",
+        "0x7fce6dd8ac039a3f18d7327aefa43d0b8c6aa0b0aaba305e5d0f2d24ef8426b1",
+        "0x08bff678885015d85b69343441b6ed8d0498ce0014fa99f607ee43444c4bca51"
+      ]
+    },
+    "0x90F79bf6EB2c4f870365E785982E1f101E93b906": {
+      "index": 9,
+      "activityCount": 12,
+      "amount": "300000000000000000000",
+      "proof": [
+        "0xfa59669f9582e184834c4f447d8fe4325a671cbcb3b09711af2471408996384e",
+        "0xca15527fe28838987ff3ca0346d628ec3bb259b9ce081a2cc3a06b57e1d21d9e",
+        "0x9a9fffad4796ab30728e9433a02ec958546fe8c71e9048c351282e71aa59eed7",
+        "0x7fce6dd8ac039a3f18d7327aefa43d0b8c6aa0b0aaba305e5d0f2d24ef8426b1",
+        "0x08bff678885015d85b69343441b6ed8d0498ce0014fa99f607ee43444c4bca51"
+      ]
+    },
+    "0x976EA74026E726554dB657fA54763abd0C3a0aa9": {
+      "index": 10,
+      "activityCount": 17,
+      "amount": "425000000000000000000",
+      "proof": [
+        "0xa29136af5f3f2ffb04dddfb64faf08214fd90b73b47dc9055939e43d94faf20a",
+        "0x4e1436f1536b407e6fd6917d5744c89ca63a2f35bcda1390e4d87340a83937a6",
+        "0x9a9fffad4796ab30728e9433a02ec958546fe8c71e9048c351282e71aa59eed7",
+        "0x7fce6dd8ac039a3f18d7327aefa43d0b8c6aa0b0aaba305e5d0f2d24ef8426b1",
+        "0x08bff678885015d85b69343441b6ed8d0498ce0014fa99f607ee43444c4bca51"
+      ]
+    },
+    "0x9965507D1a55bcC2695C58ba16FB37d819B0A4dc": {
+      "index": 11,
+      "activityCount": 6,
+      "amount": "150000000000000000000",
+      "proof": [
+        "0xd4eeff9da6161c5420a2f62b7bdbc9069b717410515a8dc7f4c2f2b86b730263",
+        "0x4e1436f1536b407e6fd6917d5744c89ca63a2f35bcda1390e4d87340a83937a6",
+        "0x9a9fffad4796ab30728e9433a02ec958546fe8c71e9048c351282e71aa59eed7",
+        "0x7fce6dd8ac039a3f18d7327aefa43d0b8c6aa0b0aaba305e5d0f2d24ef8426b1",
+        "0x08bff678885015d85b69343441b6ed8d0498ce0014fa99f607ee43444c4bca51"
+      ]
+    },
+    "0xBcd4042DE499D14e55001CcbB24a551F3b954096": {
+      "index": 12,
+      "activityCount": 15,
+      "amount": "375000000000000000000",
+      "proof": [
+        "0x4d418dc68c764f6c5613d5b52b037c7afeb47a188ea45e24bf167bfd74dffd8d",
+        "0xe5336fc5fdc1c44a1793bf432b30917ac5b8b2974a1d256de124b89981a22dcf",
+        "0x86e9ec7c42a334ce926bdb28d27b187597bb2b02b9f62f9d3526d2037e97b162",
+        "0x7fce6dd8ac039a3f18d7327aefa43d0b8c6aa0b0aaba305e5d0f2d24ef8426b1",
+        "0x08bff678885015d85b69343441b6ed8d0498ce0014fa99f607ee43444c4bca51"
+      ]
+    },
+    "0xFABB0ac9d68B0B445fB7357272Ff202C5651694a": {
+      "index": 13,
+      "activityCount": 9,
+      "amount": "225000000000000000000",
+      "proof": [
+        "0xf5576c1239d28a65dc3bf325d2d6d3138361e049394da3fd2ad3adc0f6fc7cc5",
+        "0xe5336fc5fdc1c44a1793bf432b30917ac5b8b2974a1d256de124b89981a22dcf",
+        "0x86e9ec7c42a334ce926bdb28d27b187597bb2b02b9f62f9d3526d2037e97b162",
+        "0x7fce6dd8ac039a3f18d7327aefa43d0b8c6aa0b0aaba305e5d0f2d24ef8426b1",
+        "0x08bff678885015d85b69343441b6ed8d0498ce0014fa99f607ee43444c4bca51"
+      ]
+    },
+    "0xa0Ee7A142d267C1f36714E4a8F75612F20a79720": {
+      "index": 14,
+      "activityCount": 8,
+      "amount": "200000000000000000000",
+      "proof": [
+        "0x29d47596007ec89b32795ad3fea56e7c82207f2fedfb46fcfed255c7fe4c944e",
+        "0x3ff19096274a164928387e15cc2b7d5b7c634bae62220ac86972f000eaec2578",
+        "0x86e9ec7c42a334ce926bdb28d27b187597bb2b02b9f62f9d3526d2037e97b162",
+        "0x7fce6dd8ac039a3f18d7327aefa43d0b8c6aa0b0aaba305e5d0f2d24ef8426b1",
+        "0x08bff678885015d85b69343441b6ed8d0498ce0014fa99f607ee43444c4bca51"
+      ]
+    },
+    "0xbDA5747bFD65F08deb54cb465eB87D40e51B197E": {
+      "index": 15,
+      "activityCount": 33,
+      "amount": "825000000000000000000",
+      "proof": [
+        "0x58592ac298405373ec583bee69ecded5c22391147dae73fd48c3ac5e3bd6b70c",
+        "0x3ff19096274a164928387e15cc2b7d5b7c634bae62220ac86972f000eaec2578",
+        "0x86e9ec7c42a334ce926bdb28d27b187597bb2b02b9f62f9d3526d2037e97b162",
+        "0x7fce6dd8ac039a3f18d7327aefa43d0b8c6aa0b0aaba305e5d0f2d24ef8426b1",
+        "0x08bff678885015d85b69343441b6ed8d0498ce0014fa99f607ee43444c4bca51"
+      ]
+    },
+    "0xcd3B766CCDd6AE721141F452C550Ca635964ce71": {
+      "index": 16,
+      "activityCount": 16,
+      "amount": "400000000000000000000",
+      "proof": [
+        "0xcb3bc811693ae31429d9a2690dcf0cdff1bbf80427cd544c2cd2669431852f90",
+        "0x55de205d822751822d752d52f26f3521c921f04a96e94c3a3ea208203f4ce6cb",
+        "0x2a4e478f73ea25f196b58dfe54910cbf62ee6c0eafadf9ff1b1bcd28b0e8856e",
+        "0x1d8a34bc9d7fdb013c532c2d5e8bcf4986f26378abd4a91d10a15a0726d3b7c6",
+        "0xf544abd0231e3d56f89641f718005717ab4bb300aa1e6d0e696a49a101743d93"
+      ]
+    },
+    "0xdD2FD4581271e230360230F9337D5c0430Bf44C0": {
+      "index": 17,
+      "activityCount": 30,
+      "amount": "750000000000000000000",
+      "proof": [
+        "0x245d37bb29be0da4fa719c3dbecb57990e99be609af780c5b7939da11cfb0729",
+        "0x55de205d822751822d752d52f26f3521c921f04a96e94c3a3ea208203f4ce6cb",
+        "0x2a4e478f73ea25f196b58dfe54910cbf62ee6c0eafadf9ff1b1bcd28b0e8856e",
+        "0x1d8a34bc9d7fdb013c532c2d5e8bcf4986f26378abd4a91d10a15a0726d3b7c6",
+        "0xf544abd0231e3d56f89641f718005717ab4bb300aa1e6d0e696a49a101743d93"
+      ]
+    },
+    "0xdF3e18d64BC6A983f673Ab319CCaE4f1a57C7097": {
+      "index": 18,
+      "activityCount": 13,
+      "amount": "325000000000000000000",
+      "proof": [
+        "0x7419eca176ee62b8a332b11aaaacc0577b9c93a50f19836db0507759efca62db",
+        "0xc7900602c1d89fbde48541c43259d2717d8e526c46169a7e1c8964d94be364d9",
+        "0x2a4e478f73ea25f196b58dfe54910cbf62ee6c0eafadf9ff1b1bcd28b0e8856e",
+        "0x1d8a34bc9d7fdb013c532c2d5e8bcf4986f26378abd4a91d10a15a0726d3b7c6",
+        "0xf544abd0231e3d56f89641f718005717ab4bb300aa1e6d0e696a49a101743d93"
+      ]
+    },
+    "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266": {
+      "index": 19,
+      "activityCount": 40,
+      "amount": "1000000000000000000000",
+      "proof": [
+        "0xfc4b3cc62ef322f6c0ce1bf04112fbe228b0769663014403ae574d0f49b61f2d",
+        "0xc7900602c1d89fbde48541c43259d2717d8e526c46169a7e1c8964d94be364d9",
+        "0x2a4e478f73ea25f196b58dfe54910cbf62ee6c0eafadf9ff1b1bcd28b0e8856e",
+        "0x1d8a34bc9d7fdb013c532c2d5e8bcf4986f26378abd4a91d10a15a0726d3b7c6",
+        "0xf544abd0231e3d56f89641f718005717ab4bb300aa1e6d0e696a49a101743d93"
+      ]
+    }
+  }
+}

@@ -144,7 +144,9 @@ function hashLeaf(index: number, account: string, amount: bigint): string {
 }
 
 function hashPair(left: string, right: string): string {
-  return solidityPackedKeccak256(["bytes32", "bytes32"], [left, right]);
+  return left.toLowerCase() <= right.toLowerCase()
+    ? solidityPackedKeccak256(["bytes32", "bytes32"], [left, right])
+    : solidityPackedKeccak256(["bytes32", "bytes32"], [right, left]);
 }
 
 function buildLayers(leaves: string[]): string[][] {
@@ -169,9 +171,8 @@ function buildProof(layers: string[][], index: number): string[] {
   for (let layerIndex = 0; layerIndex < layers.length - 1; layerIndex += 1) {
     const layer = layers[layerIndex];
     const pairIndex = index ^ 1;
-    if (pairIndex < layer.length) {
-      proof.push(layer[pairIndex]);
-    }
+    const sibling = pairIndex < layer.length ? layer[pairIndex] : layer[index];
+    proof.push(sibling);
     index = Math.floor(index / 2);
   }
   return proof;

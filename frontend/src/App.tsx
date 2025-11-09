@@ -53,6 +53,9 @@ function App() {
   const [maxTransferInput, setMaxTransferInput] = useState<string>("");
   const [whitelistForm, setWhitelistForm] = useState({ address: "", allowed: true });
   const [merkleRootInput, setMerkleRootInput] = useState<string>("");
+  const [activeTab, setActiveTab] = useState<"overview" | "user" | "airdrop" | "multisig">(
+    "overview",
+  );
 
   const providerRef = useRef<ethers.BrowserProvider | null>(null);
   const tokenMetaRef = useRef({ decimals: 18, symbol: "TOKEN" });
@@ -1012,6 +1015,27 @@ function App() {
     return ethers.formatUnits(snapshot.claimAmount, snapshot.decimals);
   }, [snapshot]);
 
+  const airdropPlannedFormatted = useMemo(() => {
+    if (!airdropData?.totals?.totalAllocatedFormatted) return "-";
+    return `${airdropData.totals.totalAllocatedFormatted} ${snapshot?.symbol ?? ""}`.trim();
+  }, [airdropData, snapshot?.symbol]);
+
+  const airdropRemainingFormatted = useMemo(() => {
+    if (!airdropSnapshot) return "-";
+    const decimals = snapshot?.decimals ?? airdropData?.decimals ?? 18;
+    return `${ethers.formatUnits(airdropSnapshot.balance, decimals)} ${snapshot?.symbol ?? ""}`.trim();
+  }, [airdropData?.decimals, airdropSnapshot, snapshot?.decimals, snapshot?.symbol]);
+
+  const airdropClaimedFormatted = useMemo(() => {
+    if (!airdropData?.totals || !airdropSnapshot) return "-";
+    const decimals = snapshot?.decimals ?? airdropData.decimals ?? 18;
+    const remaining = airdropSnapshot.balance;
+    const total = BigInt(airdropData.totals.totalAllocated);
+    if (total <= remaining) return `0 ${snapshot?.symbol ?? ""}`.trim();
+    const claimed = total - remaining;
+    return `${ethers.formatUnits(claimed, decimals)} ${snapshot?.symbol ?? ""}`.trim();
+  }, [airdropData, airdropSnapshot, snapshot?.decimals, snapshot?.symbol]);
+
   const maxTransferDisplay = useMemo(() => {
     if (!snapshot) return "-";
     if (snapshot.maxTransferAmount === 0n) return "Unlimited";
@@ -1024,101 +1048,191 @@ function App() {
   }, [snapshot]);
 
   const tokenSymbol = snapshot?.symbol;
+  const tabOptions = useMemo(() => {
+    const tabs: Array<{
+      id: "overview" | "user" | "airdrop" | "multisig";
+      label: string;
+      disabled: boolean;
+      visible: boolean;
+    }> = [
+      { id: "overview", label: "Overview", disabled: false, visible: true },
+      {
+        id: "user",
+        label: "User Actions",
+        disabled: !account,
+        visible: true,
+      },
+      {
+        id: "airdrop",
+        label: "Merkle Airdrop",
+        disabled: !account,
+        visible: Boolean(AIRDROP_ADDRESS),
+      },
+      {
+        id: "multisig",
+        label: "Multisig Controls",
+        disabled: !isSafeOwner,
+        visible: true,
+      },
+    ];
+    return tabs.filter((tab) => tab.visible);
+  }, [AIRDROP_ADDRESS, account, isSafeOwner]);
+
+  useEffect(() => {
+    if (tabOptions.length === 0) return;
+    if (!tabOptions.some((tab) => tab.id === activeTab && !tab.disabled)) {
+      const next = tabOptions.find((tab) => !tab.disabled)?.id ?? tabOptions[0].id;
+      setActiveTab(next);
+    }
+  }, [activeTab, tabOptions]);
+
+  const renderPlaceholder = useCallback(
+    (title: string, message: string) => (
+      <div className={styles.placeholderCard}>
+        <h3>{title}</h3>
+        <p>{message}</p>
+      </div>
+    ),
+    []
+  );
 
   return (
     <div className={styles.app}>
       <div className={styles.inner}>
-        <Header
-          tokenAddress={CONTRACT_ADDRESS}
-          safeAddress={safeSnapshot?.address ?? snapshot?.owner}
-          account={account}
-          roleLabel={roleLabel}
-          isSafeOwner={isSafeOwner}
-          isRefreshing={loadingAction === "refresh"}
-          tokenName={snapshot?.name ?? "MyToken"}
-          onConnect={connectWallet}
-          onDisconnect={disconnect}
-          onRefresh={handleRefresh}
-        />
-
         {toast && <ToastBanner toast={toast} />}
 
-        <OverviewCard
-          snapshot={snapshot}
-          account={account}
-          roleLabel={roleLabel}
-          safeSnapshot={safeSnapshot}
-          formattedBalance={formattedBalance}
-          formattedTotalSupply={formattedTotalSupply}
-          formattedClaimAmount={formattedClaimAmount}
-          maxTransferLabel={maxTransferDisplay}
-          treasuryLabel={treasuryLabel}
-        />
+        <section className={styles.interface}>
+          <aside className={styles.globalSidebar}>
+            {tabOptions.map((tab) => (
+              <button
+                key={tab.id}
+                className={`${styles.navButton} ${
+                  tab.id === activeTab ? styles.navButtonActive : ""
+                }`}
+                onClick={() => !tab.disabled && setActiveTab(tab.id)}
+                type="button"
+                disabled={tab.disabled}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </aside>
 
-        {account && (
-          <section className={styles.cardGrid}>
-            <UserActions
-              symbol={tokenSymbol}
-              hasClaimed={hasFaucetClaimed}
-              loadingAction={loadingAction}
-              transferForm={transferForm}
-              burnAmount={burnAmount}
-              transferDisabledReason={transferValidation.reason}
-              burnDisabledReason={burnValidation.reason}
-              isTransferDisabled={loadingAction === "transfer" || transferValidation.disabled}
-              isBurnDisabled={loadingAction === "burn" || burnValidation.disabled}
-              onClaim={handleFaucetClaim}
-              onTransferSubmit={handleTransfer}
-              onBurnSubmit={handleBurn}
-              onTransferChange={handleTransferFormChange}
-              onBurnChange={handleBurnInputChange}
-            />
-            {AIRDROP_ADDRESS && (
-              <AirdropPanel
-                symbol={tokenSymbol}
-                decimals={snapshot?.decimals}
-                snapshot={airdropSnapshot}
-                data={airdropData}
-                claim={airdropClaim}
-                isClaimed={airdropClaimed}
-                loadingAction={loadingAction}
-                onClaim={handleAirdropClaim}
-                dataSource={AIRDROP_DATA_URL}
-              />
-            )}
-
-            {isSafeOwner && (
-              <OwnerControls
+          <div className={styles.mainStack}>
+            <div className={styles.heroShell}>
+              <Header
+                tokenAddress={CONTRACT_ADDRESS}
+                safeAddress={safeSnapshot?.address ?? snapshot?.owner}
                 account={account}
-                snapshot={snapshot}
-                safeSnapshot={safeSnapshot}
-                loadingAction={loadingAction}
-                airdropAddress={AIRDROP_ADDRESS}
-                treasuryInput={treasuryInput}
-                feeInput={feeInput}
-                maxTransferInput={maxTransferInput}
-                whitelistAddress={whitelistForm.address}
-                whitelistAllowed={whitelistForm.allowed}
-                merkleRootInput={merkleRootInput}
-                onPauseToggle={handlePauseToggle}
-                onTreasuryInputChange={handleTreasuryInputChange}
-                onSetTreasury={handleSetTreasury}
-                onFeeInputChange={handleFeeInputChange}
-                onSetFee={handleSetFee}
-                onMaxTransferInputChange={handleMaxTransferInputChange}
-                onSetMaxTransfer={handleSetMaxTransfer}
-                onWhitelistAddressChange={handleWhitelistAddressChange}
-                onWhitelistAllowedChange={handleWhitelistAllowedChange}
-                onApplyWhitelist={handleWhitelist}
-                onMerkleRootInputChange={handleMerkleRootInputChange}
-                onSetMerkleRoot={handleSetMerkleRoot}
-                onConfirmTransaction={handleConfirmTransaction}
-                onRevokeTransaction={handleRevokeTransaction}
-                onExecuteTransaction={handleExecuteTransaction}
+                roleLabel={roleLabel}
+                isSafeOwner={isSafeOwner}
+                isRefreshing={loadingAction === "refresh"}
+                tokenName={snapshot?.name ?? "MyToken"}
+                onConnect={connectWallet}
+                onDisconnect={disconnect}
+                onRefresh={handleRefresh}
               />
-            )}
-          </section>
-        )}
+            </div>
+
+            <div className={styles.tabContent}>
+              {activeTab === "overview" && (
+                <OverviewCard
+                  snapshot={snapshot}
+                  account={account}
+                  roleLabel={roleLabel}
+                  safeSnapshot={safeSnapshot}
+                  formattedBalance={formattedBalance}
+                  formattedTotalSupply={formattedTotalSupply}
+                  formattedClaimAmount={formattedClaimAmount}
+                  maxTransferLabel={maxTransferDisplay}
+                  treasuryLabel={treasuryLabel}
+                />
+              )}
+
+              {activeTab === "user" &&
+                (account
+                  ? (
+                    <UserActions
+                      symbol={tokenSymbol}
+                      hasClaimed={hasFaucetClaimed}
+                      loadingAction={loadingAction}
+                      transferForm={transferForm}
+                      burnAmount={burnAmount}
+                      transferDisabledReason={transferValidation.reason}
+                      burnDisabledReason={burnValidation.reason}
+                      isTransferDisabled={loadingAction === "transfer" || transferValidation.disabled}
+                      isBurnDisabled={loadingAction === "burn" || burnValidation.disabled}
+                      onClaim={handleFaucetClaim}
+                      onTransferSubmit={handleTransfer}
+                      onBurnSubmit={handleBurn}
+                      onTransferChange={handleTransferFormChange}
+                      onBurnChange={handleBurnInputChange}
+                    />
+                  )
+                  : renderPlaceholder("Wallet required", "Connect a wallet to access user actions."))}
+
+              {activeTab === "airdrop" &&
+                (account && AIRDROP_ADDRESS
+                  ? (
+                    <AirdropPanel
+                      symbol={tokenSymbol}
+                      decimals={snapshot?.decimals}
+                      snapshot={airdropSnapshot}
+                      data={airdropData}
+                      claim={airdropClaim}
+                      isClaimed={airdropClaimed}
+                      loadingAction={loadingAction}
+                      onClaim={handleAirdropClaim}
+                      dataSource={AIRDROP_DATA_URL}
+                      plannedTotal={airdropPlannedFormatted}
+                      remainingTotal={airdropRemainingFormatted}
+                      claimedTotal={airdropClaimedFormatted}
+                    />
+                  )
+                  : renderPlaceholder(
+                      "Airdrop unavailable",
+                      "Configure VITE_AIRDROP_ADDRESS and connect a wallet to manage claims."
+                    ))}
+
+              {activeTab === "multisig" &&
+                (isSafeOwner
+                  ? (
+                    <OwnerControls
+                      account={account}
+                      snapshot={snapshot}
+                      safeSnapshot={safeSnapshot}
+                      loadingAction={loadingAction}
+                      airdropAddress={AIRDROP_ADDRESS}
+                      treasuryInput={treasuryInput}
+                      feeInput={feeInput}
+                      maxTransferInput={maxTransferInput}
+                      whitelistAddress={whitelistForm.address}
+                      whitelistAllowed={whitelistForm.allowed}
+                      merkleRootInput={merkleRootInput}
+                      onPauseToggle={handlePauseToggle}
+                      onTreasuryInputChange={handleTreasuryInputChange}
+                      onSetTreasury={handleSetTreasury}
+                      onFeeInputChange={handleFeeInputChange}
+                      onSetFee={handleSetFee}
+                      onMaxTransferInputChange={handleMaxTransferInputChange}
+                      onSetMaxTransfer={handleSetMaxTransfer}
+                      onWhitelistAddressChange={handleWhitelistAddressChange}
+                      onWhitelistAllowedChange={handleWhitelistAllowedChange}
+                      onApplyWhitelist={handleWhitelist}
+                      onMerkleRootInputChange={handleMerkleRootInputChange}
+                      onSetMerkleRoot={handleSetMerkleRoot}
+                      onConfirmTransaction={handleConfirmTransaction}
+                      onRevokeTransaction={handleRevokeTransaction}
+                      onExecuteTransaction={handleExecuteTransaction}
+                    />
+                  )
+                  : renderPlaceholder(
+                      "Access restricted",
+                      "Only multisig owners can view and manage these controls."
+                    ))}
+            </div>
+          </div>
+        </section>
       </div>
     </div>
   );

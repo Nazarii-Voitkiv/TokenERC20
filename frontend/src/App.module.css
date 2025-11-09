@@ -1,24 +1,131 @@
 .app {
   min-height: 100vh;
-  padding: 2.5rem 1.5rem 3rem;
+  padding: 2.5rem 2rem 3rem;
+  padding-left: 0;
+  background: radial-gradient(circle at 8% 15%, rgba(49, 75, 130, 0.2), transparent 45%),
+    radial-gradient(circle at 70% 10%, rgba(33, 55, 104, 0.25), transparent 40%),
+    var(--color-app);
 }
 
 .inner {
-  max-width: 1100px;
-  margin: 0 auto;
+  width: 100%;
+  max-width: none;
+  margin: 0;
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
 }
 
-.cardGrid {
+.heroShell {
+  border-radius: 1.5rem;
+  padding: 1.5rem;
+  background: linear-gradient(130deg, rgba(13, 23, 45, 0.95), rgba(9, 15, 30, 0.95));
+  border: 1px solid var(--color-border);
+  box-shadow: 0 25px 60px var(--color-shadow-strong);
+}
+
+.interface {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  grid-template-columns: 240px minmax(0, 1fr);
   gap: 1.5rem;
+  align-items: stretch;
+}
+
+.globalSidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  padding: 1.25rem 1.2rem;
+  border-radius: 1.2rem;
+  border: 1px solid var(--color-border);
+  background: var(--color-sidebar);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.02);
+  min-height: calc(100vh - 5rem);
+  position: sticky;
+  top: 2rem;
+}
+
+.navButton {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border-radius: 0.85rem;
+  border: 1px solid var(--color-border);
+  background: transparent;
+  color: var(--color-text-muted);
+  font-weight: 600;
+  text-align: left;
+  font-size: 0.95rem;
+  letter-spacing: 0.01em;
+  transition: all 0.2s ease;
+}
+
+.navButton:hover:not(:disabled) {
+  border-color: var(--color-accent-start);
+  color: var(--color-text);
+}
+
+.navButtonActive {
+  background: rgba(87, 119, 255, 0.18);
+  border-color: rgba(87, 119, 255, 0.65);
+  color: var(--color-text);
+  box-shadow: inset 0 0 0 1px rgba(87, 119, 255, 0.45);
+}
+
+.mainStack {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  flex: 1;
+  min-width: 0;
+}
+
+.tabContent {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.placeholderCard {
+  border-radius: 1.2rem;
+  padding: 1.5rem;
+  background: var(--color-surface-soft);
+  border: 1px solid var(--color-border);
+  box-shadow: 0 15px 35px rgba(2, 6, 23, 0.6);
+}
+
+.placeholderCard h3 {
+  margin: 0 0 0.35rem;
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.placeholderCard p {
+  margin: 0;
+  color: rgba(226, 232, 240, 0.75);
 }
 
 @media (max-width: 768px) {
   .app {
     padding: 2rem 1rem;
+    padding-left: 1rem;
+  }
+
+  .interface {
+    flex-direction: column;
+    display: flex;
+  }
+
+  .globalSidebar {
+    flex: 1;
+    flex-direction: row;
+    overflow-x: auto;
+    position: static;
+    min-height: auto;
+    padding: 1rem;
+  }
+
+  .navButton {
+    flex: 1;
+    text-align: center;
   }
 }
