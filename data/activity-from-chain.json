@@ -1,0 +1,56 @@
+[
+  {
+    "address": "0x0000000000000000000000000000000000000000",
+    "activityCount": 2,
+    "activities": [
+      {
+        "weight": 1
+      },
+      {
+        "weight": 1
+      }
+    ]
+  },
+  {
+    "address": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8",
+    "activityCount": 4,
+    "activities": [
+      {
+        "weight": 1.6
+      },
+      {
+        "weight": 2
+      }
+    ]
+  },
+  {
+    "address": "0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9",
+    "activityCount": 4,
+    "activities": [
+      {
+        "weight": 1
+      },
+      {
+        "weight": 0.8
+      },
+      {
+        "weight": 2
+      }
+    ]
+  },
+  {
+    "address": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
+    "activityCount": 6,
+    "activities": [
+      {
+        "weight": 2
+      },
+      {
+        "weight": 0.8
+      },
+      {
+        "weight": 3
+      }
+    ]
+  }
+]

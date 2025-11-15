@@ -3,95 +3,35 @@ import path from "node:path";
 
 import { Interface, JsonRpcProvider, formatUnits, getAddress, id } from "ethers";
 
-type CLIOptions = {
-  token: string;
-  rpcUrl: string;
-  fromBlock: number;
-  toBlock?: number;
-  chunkSize: number;
-  minValue: bigint;
-  output: string;
-  decimals: number;
-};
-
 type ActivitySnapshot = {
   address: string;
   sentCount: number;
   receivedCount: number;
   sentVolume: bigint;
   receivedVolume: bigint;
+  counterparties: Set<string>;
 };
 
 type ActivityRecord = {
   address: string;
   activityCount: number;
-  activities: Array<{ type: "sent" | "received"; count: number; volume: string }>;
+  activities: Array<{ weight: number }>;
+  bonus?: number;
 };
 
 const TRANSFER_TOPIC = id("Transfer(address,address,uint256)");
 const ERC20_INTERFACE = new Interface(["event Transfer(address indexed from, address indexed to, uint256 value)"]);
 
-function parseArgs(): CLIOptions {
-  const args = process.argv.slice(2);
-  const options: Partial<CLIOptions> = {};
-
-  for (let i = 0; i < args.length; i += 1) {
-    const raw = args[i];
-    if (!raw.startsWith("--")) continue;
-    const [flag, valueFromEquals] = raw.split("=");
-    const value = valueFromEquals ?? args[i + 1];
-    if (!value) {
-      throw new Error(`Missing value for ${flag}`);
-    }
-    if (!valueFromEquals) i += 1;
-
-    switch (flag) {
-      case "--token":
-        options.token = value;
-        break;
-      case "--rpc":
-        options.rpcUrl = value;
-        break;
-      case "--from":
-        options.fromBlock = Number.parseInt(value, 10);
-        break;
-      case "--to":
-        options.toBlock = Number.parseInt(value, 10);
-        break;
-      case "--chunk":
-        options.chunkSize = Number.parseInt(value, 10);
-        break;
-      case "--min-value":
-        options.minValue = BigInt(value);
-        break;
-      case "--decimals":
-        options.decimals = Number.parseInt(value, 10);
-        break;
-      case "--output":
-        options.output = value;
-        break;
-      default:
-        throw new Error(`Unknown flag ${flag}`);
-    }
-  }
-
-  if (!options.token) throw new Error("Provide --token=<erc20-address>");
-  if (!options.rpcUrl) throw new Error("Provide --rpc=<RPC URL>");
-  if (!options.fromBlock || Number.isNaN(options.fromBlock)) {
-    throw new Error("Provide --from=<start block>");
-  }
-
-  return {
-    token: getAddress(options.token),
-    rpcUrl: options.rpcUrl,
-    fromBlock: options.fromBlock,
-    toBlock: options.toBlock,
-    chunkSize: options.chunkSize && options.chunkSize > 0 ? options.chunkSize : 2_000,
-    minValue: options.minValue ?? 0n,
-    output: options.output ?? "data/activity-from-chain.json",
-    decimals: options.decimals ?? 18,
-  };
-}
+const CONFIG = {
+  token: getAddress("0x5FbDB2315678afecb367f032d93F642f64180aa3"), // MyToken on Hardhat (adjust if needed)
+  rpcUrl: "http://127.0.0.1:8545",
+  fromBlock: 0,
+  toBlock: undefined as number | undefined,
+  chunkSize: 2_000,
+  minValue: 0n,
+  decimals: 18,
+  output: "data/activity-from-chain.json",
+};
 
 function chunkRange(start: number, end: number, chunkSize: number): Array<[number, number]> {
   const ranges: Array<[number, number]> = [];
@@ -103,22 +43,24 @@ function chunkRange(start: number, end: number, chunkSize: number): Array<[numbe
 }
 
 async function main() {
-  const options = parseArgs();
-  const provider = new JsonRpcProvider(options.rpcUrl);
-  const latestBlock = options.toBlock ?? (await provider.getBlockNumber());
-  if (latestBlock < options.fromBlock) {
+    if (!CONFIG.token || !CONFIG.rpcUrl) {
+    throw new Error("Configure token address and RPC URL inside scripts/collectActivity.ts");
+  }
+  const provider = new JsonRpcProvider(CONFIG.rpcUrl);
+  const latestBlock = CONFIG.toBlock ?? (await provider.getBlockNumber());
+    if (latestBlock < CONFIG.fromBlock) {
     throw new Error("toBlock must be greater than fromBlock");
   }
 
   const activity = new Map<string, ActivitySnapshot>();
-  const ranges = chunkRange(options.fromBlock, latestBlock, options.chunkSize);
+  const ranges = chunkRange(CONFIG.fromBlock, latestBlock, CONFIG.chunkSize);
   console.log(
-    `Scanning Transfer logs for ${options.token} from block ${options.fromBlock} to ${latestBlock} in ${ranges.length} chunk(s)...`,
+    `Scanning Transfer logs for ${CONFIG.token} from block ${CONFIG.fromBlock} to ${latestBlock} in ${ranges.length} chunk(s)...`,
   );
 
   for (const [fromBlock, toBlock] of ranges) {
     const logs = await provider.getLogs({
-      address: options.token,
+      address: CONFIG.token,
       topics: [TRANSFER_TOPIC],
       fromBlock,
       toBlock,
@@ -130,7 +72,7 @@ async function main() {
       const from = getAddress(parsed.args.from);
       const to = getAddress(parsed.args.to);
       const value = BigInt(parsed.args.value);
-      if (value < options.minValue) continue;
+      if (value < CONFIG.minValue) continue;
 
       const fromSnapshot =
         activity.get(from) ??
@@ -140,9 +82,11 @@ async function main() {
           receivedCount: 0,
           sentVolume: 0n,
           receivedVolume: 0n,
+          counterparties: new Set<string>(),
         };
       fromSnapshot.sentCount += 1;
       fromSnapshot.sentVolume += value;
+      fromSnapshot.counterparties.add(to);
       activity.set(from, fromSnapshot);
 
       const toSnapshot =
@@ -153,41 +97,46 @@ async function main() {
           receivedCount: 0,
           sentVolume: 0n,
           receivedVolume: 0n,
+          counterparties: new Set<string>(),
         };
       toSnapshot.receivedCount += 1;
       toSnapshot.receivedVolume += value;
+      toSnapshot.counterparties.add(from);
       activity.set(to, toSnapshot);
     }
   }
 
   const records: ActivityRecord[] = Array.from(activity.values())
     .map((snapshot) => {
-      const activities = [];
+      const counterparties = snapshot.counterparties.size;
+      const activityCount = snapshot.sentCount + snapshot.receivedCount + Math.min(counterparties, 5);
+      const activities: Array<{ weight: number }> = [];
       if (snapshot.sentCount > 0) {
-        activities.push({
-          type: "sent",
-          count: snapshot.sentCount,
-          volume: snapshot.sentVolume.toString(),
-        });
+        activities.push({ weight: snapshot.sentCount });
       }
       if (snapshot.receivedCount > 0) {
-        activities.push({
-          type: "received",
-          count: snapshot.receivedCount,
-          volume: snapshot.receivedVolume.toString(),
-        });
+        activities.push({ weight: snapshot.receivedCount * 0.8 });
       }
-      const activityCount = snapshot.sentCount + snapshot.receivedCount;
+      if (counterparties > 0) {
+        activities.push({ weight: counterparties });
+      }
+
+      const bonus =
+        snapshot.sentVolume >= CONFIG.bonusThreshold
+          ? Number(formatUnits(snapshot.sentVolume / 10n, CONFIG.decimals))
+          : undefined;
+
       return {
         address: snapshot.address,
         activityCount,
         activities,
-      };
+        ...(bonus ? { bonus } : {}),
+      } as ActivityRecord;
     })
     .filter((record) => record.activityCount > 0)
     .sort((a, b) => (a.address > b.address ? 1 : -1));
 
-  const outputAbsolute = path.resolve(options.output);
+  const outputAbsolute = path.resolve(CONFIG.output);
   await writeFile(outputAbsolute, JSON.stringify(records, null, 2));
 
   const totalTransfers = records.reduce((acc, record) => acc + record.activityCount, 0);
@@ -206,7 +155,7 @@ async function main() {
 
   console.log(`Unique addresses: ${uniqueAddresses}`);
   console.log(`Total transfer events counted (sent + received): ${totalTransfers}`);
-  console.log(`Aggregate sent volume: ${formatUnits(totalVolume, options.decimals)}`);
+  console.log(`Aggregate sent volume: ${formatUnits(totalVolume, CONFIG.decimals)}`);
   console.log(`Activity JSON written to: ${outputAbsolute}`);
 }
 
