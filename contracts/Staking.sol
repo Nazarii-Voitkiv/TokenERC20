@@ -2,10 +2,11 @@
 pragma solidity 0.8.30;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/utils/math/Math.sol";
 
-contract Staking is Ownable {
+contract Staking is Ownable, ReentrancyGuard {
     using Math for uint256;
 
     IERC20 public immutable stakingToken;
@@ -60,7 +61,7 @@ contract Staking is Ownable {
             rewards[account];
     }
 
-    function stake(uint256 amount) external updateReward(msg.sender) {
+    function stake(uint256 amount) external nonReentrant updateReward(msg.sender) {
         require(amount > 0, "amount zero");
         totalStaked += amount;
         balances[msg.sender] += amount;
@@ -68,25 +69,38 @@ contract Staking is Ownable {
         emit Staked(msg.sender, amount);
     }
 
-    function withdraw(uint256 amount) public updateReward(msg.sender) {
+    function withdraw(uint256 amount) public nonReentrant updateReward(msg.sender) {
+        _withdraw(msg.sender, amount);
+    }
+
+    function _withdraw(address account, uint256 amount) internal {
         require(amount > 0, "amount zero");
-        require(balances[msg.sender] >= amount, "insufficient stake");
+        require(balances[account] >= amount, "insufficient stake");
         totalStaked -= amount;
-        balances[msg.sender] -= amount;
-        require(stakingToken.transfer(msg.sender, amount), "transfer failed");
-        emit Withdrawn(msg.sender, amount);
+        balances[account] -= amount;
+        require(stakingToken.transfer(account, amount), "transfer failed");
+        emit Withdrawn(account, amount);
     }
 
-    function claimReward() public updateReward(msg.sender) {
-        uint256 reward = rewards[msg.sender];
-        rewards[msg.sender] = 0;
+    function claimReward() public nonReentrant updateReward(msg.sender) {
+        _claimReward(msg.sender);
+    }
+
+    function _claimReward(address account) internal {
+        uint256 reward = rewards[account];
+        rewards[account] = 0;
         require(reward > 0, "no rewards");
-        require(stakingToken.transfer(msg.sender, reward), "reward transfer failed");
-        emit RewardPaid(msg.sender, reward);
+        require(stakingToken.transfer(account, reward), "reward transfer failed");
+        emit RewardPaid(account, reward);
     }
 
-    function exit() external {
-        withdraw(balances[msg.sender]);
-        claimReward();
+    function exit() external nonReentrant updateReward(msg.sender) {
+        uint256 balance = balances[msg.sender];
+        if (balance > 0) {
+            _withdraw(msg.sender, balance);
+        }
+        if (rewards[msg.sender] > 0) {
+            _claimReward(msg.sender);
+        }
     }
 }
