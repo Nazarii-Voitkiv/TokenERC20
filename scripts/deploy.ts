@@ -3,6 +3,7 @@ import hre from "hardhat";
 const DEFAULT_INITIAL_SUPPLY = 1_000_000n;
 const DEFAULT_CLAIM_AMOUNT = 100n;
 const ZERO_BYTES32 = `0x${"00".repeat(32)}`;
+const DEFAULT_STAKING_REWARD_RATE = 1_000_000_000_000_000n; // 0.001 token/sec before scaling
 
 function parseOwners(rawOwners: string | undefined) {
   if (!rawOwners) return [];
@@ -34,6 +35,18 @@ function parseUint(rawValue: string | undefined, fallback: bigint, label: string
     return value;
   } catch {
     throw new Error(`Invalid ${label}=${rawValue}. Expected a positive integer.`);
+  }
+}
+
+function parseUintAllowZero(rawValue: string | undefined, fallback: bigint, label: string) {
+  if (!rawValue) return fallback;
+
+  try {
+    const value = BigInt(rawValue);
+    if (value < 0n) throw new Error();
+    return value;
+  } catch {
+    throw new Error(`Invalid ${label}=${rawValue}. Expected a non-negative integer.`);
   }
 }
 
@@ -89,6 +102,16 @@ async function main() {
     0n,
     "AIRDROP_RESERVE",
   );
+  const stakingRewardRateRaw = parseUint(
+    process.env.STAKING_REWARD_RATE,
+    DEFAULT_STAKING_REWARD_RATE,
+    "STAKING_REWARD_RATE",
+  );
+  const stakingInitialFundWhole = parseUintAllowZero(
+    process.env.STAKING_INITIAL_FUND,
+    0n,
+    "STAKING_INITIAL_FUND",
+  );
   const merkleRoot = parseMerkleRoot(process.env.AIRDROP_MERKLE_ROOT);
 
   const tokenName = process.env.TOKEN_NAME ?? "MyToken";
@@ -117,6 +140,7 @@ async function main() {
   const decimals = await token.decimals();
   const scale = 10n ** BigInt(decimals);
   const airdropReserveRaw = airdropReserveWhole * scale;
+  const stakingInitialFundRaw = stakingInitialFundWhole * scale;
 
   const airdrop = await ethers.deployContract("MerkleAirdrop", [
     await token.getAddress(),
@@ -139,6 +163,23 @@ async function main() {
   console.log("MerkleAirdrop deployed to:", airdropAddress);
   console.log("Configured Merkle root:", merkleRoot);
   console.log("Ownership of MyToken transferred to MyTokenSafe multisig.");
+
+  const staking = await ethers.deployContract("Staking", [
+    await token.getAddress(),
+    stakingRewardRateRaw,
+  ]);
+  await staking.waitForDeployment();
+  const stakingAddress = await staking.getAddress();
+
+  console.log("Staking contract deployed to:", stakingAddress);
+
+  if (stakingInitialFundRaw > 0n) {
+    const stakingFundTx = await token.transfer(stakingAddress, stakingInitialFundRaw);
+    await stakingFundTx.wait();
+    console.log(
+      `Seeded staking contract with ${stakingInitialFundWhole.toString()} tokens (${stakingInitialFundRaw} raw units)`,
+    );
+  }
 }
 
 main().catch((err) => {
