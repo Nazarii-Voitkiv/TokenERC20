@@ -38,8 +38,9 @@ describe("MyToken", function () {
         .to.emit(token, "Transfer")
         .withArgs(ethers.ZeroAddress, alice.address, claimAmount);
 
-      await expect(token.connect(alice).claimFreeTokens()).to.be.revertedWith(
-        "already claimed",
+      await expect(token.connect(alice).claimFreeTokens()).to.be.revertedWithCustomError(
+        token,
+        "AlreadyClaimed",
       );
     });
   });
@@ -83,7 +84,7 @@ describe("MyToken", function () {
 
       await expect(
         token.connect(alice).transfer(bob.address, limit + 1n),
-      ).to.be.revertedWith("too big transfer");
+      ).to.be.revertedWithCustomError(token, "TransferTooLarge");
 
       await expect(
         token.connect(alice).transfer(bob.address, limit),
@@ -101,8 +102,9 @@ describe("MyToken", function () {
       await token.connect(owner).transfer(alice.address, amount);
       await token.connect(owner).pause();
 
-      await expect(token.connect(alice).transfer(bob.address, amount)).to.be
-        .revertedWith("Token is paused");
+      await expect(
+        token.connect(alice).transfer(bob.address, amount),
+      ).to.be.revertedWithCustomError(token, "TokenPaused");
 
       await token.connect(owner).setWhitelisted([alice.address], true);
       await expect(

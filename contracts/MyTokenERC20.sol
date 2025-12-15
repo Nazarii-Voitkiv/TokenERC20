@@ -8,7 +8,15 @@ import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Burnable.sol";
 
 contract MyToken is ERC20, ERC20Burnable, Ownable, Pausable {
     uint256 public constant MAX_FEE_BPS = 500;
+    uint256 private constant BPS_DENOMINATOR = 10_000;
     uint256 public immutable CLAIM_AMOUNT;
+
+    error AlreadyClaimed();
+    error TreasuryZero();
+    error FeeTooHigh();
+    error ZeroRecipient();
+    error TransferTooLarge();
+    error TokenPaused();
 
     event TreasuryUpdated(address indexed newTreasury);
     event FeeBpsUpdated(uint256 newFeeBps);
@@ -17,16 +25,17 @@ contract MyToken is ERC20, ERC20Burnable, Ownable, Pausable {
     event MaxTransferUpdated(uint256 newMaxTransfer);
 
     constructor(
-        string memory name_, 
-        string memory symbol_, 
+        string memory name_,
+        string memory symbol_,
         uint256 initialSupplyWhole,
         uint256 claimAmount_
     )
         ERC20(name_, symbol_)
         Ownable(msg.sender)
     {
-        _mint(msg.sender, initialSupplyWhole * 10 ** decimals());
-        CLAIM_AMOUNT = claimAmount_ * 10 ** decimals();
+        uint256 scale = 10 ** decimals();
+        _mint(msg.sender, initialSupplyWhole * scale);
+        CLAIM_AMOUNT = claimAmount_ * scale;
     }
 
     address public treasury;
@@ -41,33 +50,39 @@ contract MyToken is ERC20, ERC20Burnable, Ownable, Pausable {
     }
 
     function claimFreeTokens() external {
-        require(!hasClaimed[msg.sender], "already claimed");
+        if (hasClaimed[msg.sender]) revert AlreadyClaimed();
         hasClaimed[msg.sender] = true;
-        _mint(msg.sender, CLAIM_AMOUNT);
-        emit Claimed(msg.sender, CLAIM_AMOUNT);
+        uint256 claimAmount = CLAIM_AMOUNT;
+        _mint(msg.sender, claimAmount);
+        emit Claimed(msg.sender, claimAmount);
     }
 
     function setTreasury(address _treasuryAddress) external onlyOwner {
-        require(_treasuryAddress != address(0), "treasury zero");
+        if (_treasuryAddress == address(0)) revert TreasuryZero();
         treasury = _treasuryAddress;
         emit TreasuryUpdated(_treasuryAddress);
     }
 
     function setFeeBps(uint256 _feeBps) external onlyOwner {
-        require(_feeBps <= MAX_FEE_BPS, 'fee too high');
+        if (_feeBps > MAX_FEE_BPS) revert FeeTooHigh();
         feeBps = _feeBps;
         emit FeeBpsUpdated(_feeBps);
     }
 
     function setWhitelisted(address[] calldata addrs, bool allowed) external onlyOwner {
-        for (uint256 i = 0; i < addrs.length; i++) {
-            isWhitelisted[addrs[i]] = allowed;
-            emit WhitelistUpdated(addrs[i], allowed);
+        uint256 len = addrs.length;
+        for (uint256 i = 0; i < len; ) {
+            address account = addrs[i];
+            isWhitelisted[account] = allowed;
+            emit WhitelistUpdated(account, allowed);
+            unchecked {
+                ++i;
+            }
         }
     }
 
     function rescueERC20(address token, address to, uint256 amount) external onlyOwner {
-        require(to != address(0), "zero to");
+        if (to == address(0)) revert ZeroRecipient();
         IERC20(token).transfer(to, amount);
     }
 
@@ -88,23 +103,23 @@ contract MyToken is ERC20, ERC20Burnable, Ownable, Pausable {
         }
 
         // pause
-        require(!paused(), "Token is paused");
+        if (paused()) revert TokenPaused();
+
+        address treas = treasury;
+        uint256 currentFee = feeBps;
 
         // fee + limit
-        if (from != address(0) && to != address(0) && to != treasury && from != treasury 
-        && treasury != address(0) && feeBps > 0) {
-            if (maxTransferAmount != 0) {
-                require(value <= maxTransferAmount, "too big transfer");
+        if (treas != address(0) && currentFee != 0 && to != treas && from != treas) {
+            uint256 limit = maxTransferAmount;
+            if (limit != 0 && value > limit) revert TransferTooLarge();
+
+            uint256 fee = (value * currentFee) / BPS_DENOMINATOR;
+            if (fee != 0) {
+                super._update(from, treas, fee);
+                value -= fee;
             }
-
-            uint256 fee = (value * feeBps) / 10_000;
-            uint256 sendAmount = value - fee;
-
-            super._update(from, treasury, fee);
-            super._update(from, to, sendAmount);
-            return;
         }
-        
+
         // default
         super._update(from, to, value);
     }

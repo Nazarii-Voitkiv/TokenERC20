@@ -33,7 +33,7 @@ contract MyTokenTest is Test {
         assertEq(token.balanceOf(ALICE), claimAmount, "claim amount not minted");
 
         vm.prank(ALICE);
-        vm.expectRevert("already claimed");
+        vm.expectRevert(MyToken.AlreadyClaimed.selector);
         token.claimFreeTokens();
     }
 
@@ -68,7 +68,7 @@ contract MyTokenTest is Test {
         token.setMaxTransferAmount(limit);
 
         vm.prank(ALICE);
-        vm.expectRevert("too big transfer");
+        vm.expectRevert(MyToken.TransferTooLarge.selector);
         token.transfer(BOB, limit + 1);
 
         vm.prank(ALICE);
@@ -83,7 +83,7 @@ contract MyTokenTest is Test {
         token.pause();
 
         vm.prank(ALICE);
-        vm.expectRevert("Token is paused");
+        vm.expectRevert(MyToken.TokenPaused.selector);
         token.transfer(BOB, amount);
 
         address[] memory whitelist = new address[](1);

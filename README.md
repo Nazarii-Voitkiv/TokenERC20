@@ -1,6 +1,6 @@
 # MyToken Control Center
 
-End‑to‑end stack for an ERC‑20 with a faucet, a multisig owner, and a Merkle airdrop distributor. Includes Hardhat (deploy/verify), Foundry tests, data pipelines for building Merkle trees, and a Vite + React UI.
+End‑to‑end stack for an ERC‑20 with a faucet, a multisig owner, a Merkle airdrop distributor, and a staking pool. Includes Hardhat (deploy/verify), Foundry tests, data pipelines for building Merkle trees, and a Vite + React UI.
 
 ---
 
@@ -33,6 +33,8 @@ Copy `.env.example` → `.env` and fill:
 | `TOKEN_CLAIM_AMOUNT` | Faucet amount minted per wallet |
 | `AIRDROP_MERKLE_ROOT` | Merkle root for the distributor (from `generateAirdrop.ts`) |
 | `AIRDROP_RESERVE` | Whole tokens to transfer into the distributor immediately after deploy |
+| `STAKING_REWARD_RATE` | Raw token units emitted per second by the staking contract |
+| `STAKING_INITIAL_FUND` | Whole tokens to transfer into the staking contract to cover rewards |
 | `MULTISIG_OWNERS` | Comma‑separated owner addresses |
 | `MULTISIG_THRESHOLD` | Required confirmations |
 
@@ -76,7 +78,7 @@ Inside `frontend/` create `.env` with:
    ```bash
    npx hardhat run scripts/deploy.ts --network <network>
    ```
-   The script deploys `MyToken`, `MyTokenSafe`, `MerkleAirdrop`, transfers token ownership to the safe, and optionally seeds the airdrop with `AIRDROP_RESERVE`.
+   The script deploys `MyToken`, `MyTokenSafe`, `MerkleAirdrop`, `Staking`, transfers token ownership to the safe, and optionally seeds the airdrop with `AIRDROP_RESERVE` plus the staking contract with `STAKING_INITIAL_FUND`. The staking pool starts emitting `STAKING_REWARD_RATE` raw units/second (≈tokens/sec after decimals).
 5. **Verify (optional)**  
    Set `ETHERSCAN_API_KEY` and run:
    ```bash
@@ -126,3 +128,16 @@ forge test                 # Solidity specs
 - **Multisig Controls** – pause, fees, treasury, limits, whitelist, plus Merkle root updates via the safe.
 
 The UI fetches the Merkle JSON from `VITE_AIRDROP_DATA_URL`, compares its root with the on-chain value, and displays remaining/claimed allocations in real time.
+
+---
+
+## Staking overview
+
+`contracts/Staking.sol` exposes a simple single‑asset staking pool that pays rewards in the same ERC‑20:
+
+- Emits rewards per second (`STAKING_REWARD_RATE`) across all stakers, tracked via `rewardPerToken`.
+- Owner (the deployer multisig) can update the reward rate without interrupting accounting.
+- `stake`, `withdraw`, `claimReward`, and `exit` are guarded with reentrancy protection and transfer tokens using `transferFrom`/`transfer`.
+- Funding happens during deploy when `STAKING_INITIAL_FUND` > 0 or manually via token transfers later; users receive rewards only if the pool has balance.
+
+The staking contract has no dedicated frontend module by default, but it is fully covered in both Foundry (`foundry/test/Staking.t.sol`) and Hardhat (`test/Staking.test.ts`) suites.
