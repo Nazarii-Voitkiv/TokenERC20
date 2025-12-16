@@ -3,13 +3,18 @@ pragma solidity ^0.8.30;
 
 contract MyTokenSafe {
     error NotOwner();
+    error OnlySelfCall();
     error OwnerDoesNotExist(address owner);
     error InvalidThreshold();
     error DuplicateOwner(address owner);
     error ZeroAddressOwner();
+    error ZeroAddressTarget();
+    error OwnerRequired();
     error TxDoesNotExist(uint256 txId);
     error TxAlreadyExecuted(uint256 txId);
+    error TxAlreadyConfirmed(uint256 txId);
     error TxNotConfirmed(uint256 txId);
+    error TxNotConfirmedBySender(uint256 txId);
     error ExecutionFailed(bytes reason);
 
     event Deposit(address indexed sender, uint256 amount);
@@ -41,6 +46,11 @@ contract MyTokenSafe {
         _;
     }
 
+    modifier onlySelf() {
+        if (msg.sender != address(this)) revert OnlySelfCall();
+        _;
+    }
+
     constructor(address[] memory _owners, uint256 _threshold) {
         uint256 ownersLength = _owners.length;
         if (_threshold == 0 || _threshold > ownersLength) revert InvalidThreshold();
@@ -65,6 +75,8 @@ contract MyTokenSafe {
     }
 
     function submitTransaction(address to, uint256 value, bytes calldata data) external onlyOwner returns (uint256) {
+        if (to == address(0)) revert ZeroAddressTarget();
+
         uint256 txId = transactions.length;
         transactions.push(Transaction({
             to: to,
@@ -75,24 +87,19 @@ contract MyTokenSafe {
         }));
 
         emit TransactionSubmitted(txId, to, value, data);
-        confirmTransaction(txId);
+        _confirmTransaction(txId, transactions[txId]);
         return txId;
     }
 
     function confirmTransaction(uint256 txId) public onlyOwner {
         Transaction storage transaction = _getTransaction(txId);
-        if (transaction.executed) revert TxAlreadyExecuted(txId);
-        if (isConfirmed[txId][msg.sender]) return;
-
-        isConfirmed[txId][msg.sender] = true;
-        transaction.numConfirmations += 1;
-        emit TransactionConfirmed(txId, msg.sender);
+        _confirmTransaction(txId, transaction);
     }
 
     function revokeConfirmation(uint256 txId) external onlyOwner {
         Transaction storage transaction = _getTransaction(txId);
         if (transaction.executed) revert TxAlreadyExecuted(txId);
-        if (!isConfirmed[txId][msg.sender]) return;
+        if (!isConfirmed[txId][msg.sender]) revert TxNotConfirmedBySender(txId);
 
         isConfirmed[txId][msg.sender] = false;
         transaction.numConfirmations -= 1;
@@ -115,8 +122,7 @@ contract MyTokenSafe {
         emit TransactionExecuted(txId, msg.sender);
     }
 
-    function addOwner(address newOwner) external {
-        if (msg.sender != address(this)) revert NotOwner();
+    function addOwner(address newOwner) external onlySelf {
         if (newOwner == address(0)) revert ZeroAddressOwner();
         if (isOwner[newOwner]) revert DuplicateOwner(newOwner);
 
@@ -125,9 +131,9 @@ contract MyTokenSafe {
         emit OwnerAdded(newOwner);
     }
 
-    function removeOwner(address ownerToRemove) external {
-        if (msg.sender != address(this)) revert NotOwner();
+    function removeOwner(address ownerToRemove) external onlySelf {
         if (!isOwner[ownerToRemove]) revert OwnerDoesNotExist(ownerToRemove);
+        if (owners.length <= 1) revert OwnerRequired();
 
         isOwner[ownerToRemove] = false;
 
@@ -146,8 +152,7 @@ contract MyTokenSafe {
         emit OwnerRemoved(ownerToRemove);
     }
 
-    function changeThreshold(uint256 newThreshold) external {
-        if (msg.sender != address(this)) revert NotOwner();
+    function changeThreshold(uint256 newThreshold) external onlySelf {
         _changeThreshold(newThreshold);
     }
 
@@ -177,5 +182,16 @@ contract MyTokenSafe {
     function _getTransaction(uint256 txId) internal view returns (Transaction storage) {
         if (txId >= transactions.length) revert TxDoesNotExist(txId);
         return transactions[txId];
+    }
+
+    function _confirmTransaction(uint256 txId, Transaction storage transaction) internal {
+        if (transaction.executed) revert TxAlreadyExecuted(txId);
+        if (isConfirmed[txId][msg.sender]) revert TxAlreadyConfirmed(txId);
+
+        isConfirmed[txId][msg.sender] = true;
+        unchecked {
+            transaction.numConfirmations += 1;
+        }
+        emit TransactionConfirmed(txId, msg.sender);
     }
 }

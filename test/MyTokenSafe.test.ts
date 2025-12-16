@@ -50,6 +50,24 @@ describe("MyTokenSafe", function () {
     return Number(count - 1n);
   }
 
+  async function executeSafeTx(
+    safe: any,
+    submitter: any,
+    confirmers: any[],
+    to: string,
+    data: string,
+    value: bigint = 0n,
+    executor?: any
+  ) {
+    const txId = await submitSafeTx(safe, submitter, to, data, value);
+    for (const confirmer of confirmers) {
+      await safe.connect(confirmer).confirmTransaction(txId);
+    }
+    const execSigner = executor ?? confirmers[confirmers.length - 1] ?? submitter;
+    await safe.connect(execSigner).executeTransaction(txId);
+    return txId;
+  }
+
   it("requires threshold approvals before executing owner actions", async function () {
     const { token, safe, ownerA, ownerB, treasury, threshold } = await deploySafeFixture();
     const iface = token.interface;
@@ -83,8 +101,14 @@ describe("MyTokenSafe", function () {
     const calldata = token.interface.encodeFunctionData("setFeeBps", [250]);
     const txId = await submitSafeTx(safe, ownerA, await token.getAddress(), calldata);
 
+    await expect(safe.connect(ownerB).revokeConfirmation(txId))
+      .to.be.revertedWithCustomError(safe, "TxNotConfirmedBySender")
+      .withArgs(txId);
+
     await safe.connect(ownerB).confirmTransaction(txId);
-    await safe.connect(ownerB).confirmTransaction(txId);
+    await expect(safe.connect(ownerB).confirmTransaction(txId))
+      .to.be.revertedWithCustomError(safe, "TxAlreadyConfirmed")
+      .withArgs(txId);
 
     let stored = await safe.getTransaction(txId);
     expect(stored.numConfirmations).to.equal(2n);
@@ -134,5 +158,79 @@ describe("MyTokenSafe", function () {
       safe,
       "NotOwner"
     );
+  });
+
+  it("rejects invalid targets and enforces self-managed administration", async function () {
+    const { safe, ownerA, ownerB, nonOwner } = await deploySafeFixture();
+    const zeroAddress = "0x0000000000000000000000000000000000000000";
+
+    await expect(
+      safe.connect(ownerA).submitTransaction(zeroAddress, 0, "0x")
+    ).to.be.revertedWithCustomError(safe, "ZeroAddressTarget");
+
+    await expect(safe.connect(ownerA).addOwner(nonOwner.address)).to.be.revertedWithCustomError(
+      safe,
+      "OnlySelfCall"
+    );
+
+    await expect(safe.connect(ownerA).removeOwner(ownerB.address)).to.be.revertedWithCustomError(
+      safe,
+      "OnlySelfCall"
+    );
+
+    await expect(safe.connect(ownerA).changeThreshold(1)).to.be.revertedWithCustomError(
+      safe,
+      "OnlySelfCall"
+    );
+  });
+
+  it("allows owner lifecycle changes via multisig while preserving at least one owner", async function () {
+    const { safe, ownerA, ownerB, ownerC, nonOwner } = await deploySafeFixture();
+    const safeAddress = await safe.getAddress();
+
+    await executeSafeTx(
+      safe,
+      ownerA,
+      [ownerB],
+      safeAddress,
+      safe.interface.encodeFunctionData("addOwner", [nonOwner.address])
+    );
+    expect(await safe.isOwner(nonOwner.address)).to.equal(true);
+
+    await executeSafeTx(
+      safe,
+      ownerA,
+      [ownerC],
+      safeAddress,
+      safe.interface.encodeFunctionData("removeOwner", [ownerB.address])
+    );
+    expect(await safe.isOwner(ownerB.address)).to.equal(false);
+
+    await executeSafeTx(
+      safe,
+      ownerA,
+      [nonOwner],
+      safeAddress,
+      safe.interface.encodeFunctionData("removeOwner", [ownerC.address])
+    );
+    expect(await safe.isOwner(ownerC.address)).to.equal(false);
+
+    await executeSafeTx(
+      safe,
+      ownerA,
+      [nonOwner],
+      safeAddress,
+      safe.interface.encodeFunctionData("removeOwner", [nonOwner.address])
+    );
+    expect(await safe.threshold()).to.equal(1n);
+    expect(await safe.isOwner(nonOwner.address)).to.equal(false);
+
+    const removeLastData = safe.interface.encodeFunctionData("removeOwner", [ownerA.address]);
+    const lastRemovalTxId = await submitSafeTx(safe, ownerA, safeAddress, removeLastData);
+    const revertData = safe.interface.encodeErrorResult("OwnerRequired", []);
+
+    await expect(safe.connect(ownerA).executeTransaction(lastRemovalTxId))
+      .to.be.revertedWithCustomError(safe, "ExecutionFailed")
+      .withArgs(revertData);
   });
 });
