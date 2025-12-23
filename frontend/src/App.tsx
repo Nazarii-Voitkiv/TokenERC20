@@ -689,7 +689,6 @@ function App() {
       const contract = await getWriteAirdropContract();
       const tx = await contract.claim(
         airdropClaim.index,
-        airdropClaim.account,
         airdropClaim.amount,
         airdropClaim.proof,
       );

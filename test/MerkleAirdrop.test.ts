@@ -75,9 +75,7 @@ describe("MerkleAirdrop", function () {
       await deployMerkleFixture();
 
     await expect(
-      distributor
-        .connect(alice)
-        .claim(0, alice.address, claimAlice, proofForIndex(0)),
+      distributor.connect(alice).claim(0, claimAlice, proofForIndex(0)),
     )
       .to.emit(distributor, "Claimed")
       .withArgs(0, alice.address, claimAlice);
@@ -86,9 +84,7 @@ describe("MerkleAirdrop", function () {
     expect(await distributor.isClaimed(0)).to.equal(true);
 
     await expect(
-      distributor
-        .connect(alice)
-        .claim(0, alice.address, claimAlice, proofForIndex(0)),
+      distributor.connect(alice).claim(0, claimAlice, proofForIndex(0)),
     ).to.be.revertedWithCustomError(distributor, "AlreadyClaimed");
   });
 
@@ -97,7 +93,7 @@ describe("MerkleAirdrop", function () {
     const badProof = [ethers.ZeroHash];
 
     await expect(
-      distributor.connect(bob).claim(1, bob.address, claimBob, badProof),
+      distributor.connect(bob).claim(1, claimBob, badProof),
     ).to.be.revertedWithCustomError(distributor, "InvalidProof");
   });
 

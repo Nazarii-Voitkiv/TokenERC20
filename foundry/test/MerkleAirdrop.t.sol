@@ -36,7 +36,7 @@ contract MerkleAirdropTest is Test {
         proof[0] = leafBob;
 
         vm.prank(ALICE);
-        distributor.claim(0, ALICE, CLAIM_ALICE, proof);
+        distributor.claim(0, CLAIM_ALICE, proof);
 
         assertEq(token.balanceOf(ALICE), CLAIM_ALICE);
         assertTrue(distributor.isClaimed(0));
@@ -47,11 +47,11 @@ contract MerkleAirdropTest is Test {
         proof[0] = leafBob;
 
         vm.prank(ALICE);
-        distributor.claim(0, ALICE, CLAIM_ALICE, proof);
+        distributor.claim(0, CLAIM_ALICE, proof);
 
         vm.prank(ALICE);
         vm.expectRevert(abi.encodeWithSelector(MerkleAirdrop.AlreadyClaimed.selector, 0));
-        distributor.claim(0, ALICE, CLAIM_ALICE, proof);
+        distributor.claim(0, CLAIM_ALICE, proof);
     }
 
     function testClaimFailsWithWrongProof() public {
@@ -60,7 +60,7 @@ contract MerkleAirdropTest is Test {
 
         vm.prank(BOB);
         vm.expectRevert(MerkleAirdrop.InvalidProof.selector);
-        distributor.claim(1, BOB, CLAIM_BOB, badProof);
+        distributor.claim(1, CLAIM_BOB, badProof);
     }
 
     function testOwnerCanUpdateRootAndRecover() public {

@@ -33,28 +33,24 @@ contract MerkleAirdrop is Ownable, ReentrancyGuard {
 
     function claim(
         uint256 index,
-        address account,
         uint256 amount,
         bytes32[] calldata merkleProof
     )
         external
         nonReentrant
     {
-        if (account != msg.sender) {
-            revert InvalidProof(); // cheap revert path for obvious mismatch
-        }
         if (isClaimed(index)) {
             revert AlreadyClaimed(index);
         }
 
-        bytes32 node = keccak256(abi.encodePacked(index, account, amount));
+        bytes32 node = keccak256(abi.encodePacked(index, msg.sender, amount));
         bool isValid = MerkleProof.verifyCalldata(merkleProof, merkleRoot, node);
         if (!isValid) revert InvalidProof();
 
         _setClaimed(index);
-        token.safeTransfer(account, amount);
+        token.safeTransfer(msg.sender, amount);
 
-        emit Claimed(index, account, amount);
+        emit Claimed(index, msg.sender, amount);
     }
 
     function isClaimed(uint256 index) public view returns (bool) {
