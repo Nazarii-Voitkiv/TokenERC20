@@ -4,13 +4,24 @@ pragma solidity ^0.8.30;
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/utils/math/Math.sol";
 
+/// @title Staking Pool Contract
+/// @notice Allows users to stake tokens and earn rewards over time
+/// @dev Uses a reward-per-token mechanism for fair reward distribution
 contract Staking is Ownable, ReentrancyGuard {
     using Math for uint256;
+    using SafeERC20 for IERC20;
+
+    // Custom errors for gas efficiency
+    error ZeroAmount();
+    error InsufficientStake();
+    error NoRewards();
+    error ZeroTokenAddress();
 
     IERC20 public immutable stakingToken;
-    uint256 public rewardRate; // reward tokens distributed per second
+    uint256 public rewardRate;
 
     uint256 public lastUpdateTime;
     uint256 public rewardPerTokenStored;
@@ -26,7 +37,7 @@ contract Staking is Ownable, ReentrancyGuard {
     event RewardRateUpdated(uint256 newRewardRate);
 
     constructor(address token, uint256 initialRewardRate) Ownable(msg.sender) {
-        require(token != address(0), "token zero");
+        if (token == address(0)) revert ZeroTokenAddress();
         stakingToken = IERC20(token);
         rewardRate = initialRewardRate;
         emit RewardRateUpdated(initialRewardRate);
@@ -62,10 +73,10 @@ contract Staking is Ownable, ReentrancyGuard {
     }
 
     function stake(uint256 amount) external nonReentrant updateReward(msg.sender) {
-        require(amount > 0, "amount zero");
+        if (amount == 0) revert ZeroAmount();
         totalStaked += amount;
         balances[msg.sender] += amount;
-        require(stakingToken.transferFrom(msg.sender, address(this), amount), "transfer failed");
+        stakingToken.safeTransferFrom(msg.sender, address(this), amount);
         emit Staked(msg.sender, amount);
     }
 
@@ -74,11 +85,11 @@ contract Staking is Ownable, ReentrancyGuard {
     }
 
     function _withdraw(address account, uint256 amount) internal {
-        require(amount > 0, "amount zero");
-        require(balances[account] >= amount, "insufficient stake");
+        if (amount == 0) revert ZeroAmount();
+        if (balances[account] < amount) revert InsufficientStake();
         totalStaked -= amount;
         balances[account] -= amount;
-        require(stakingToken.transfer(account, amount), "transfer failed");
+        stakingToken.safeTransfer(account, amount);
         emit Withdrawn(account, amount);
     }
 
@@ -88,9 +99,9 @@ contract Staking is Ownable, ReentrancyGuard {
 
     function _claimReward(address account) internal {
         uint256 reward = rewards[account];
+        if (reward == 0) revert NoRewards();
         rewards[account] = 0;
-        require(reward > 0, "no rewards");
-        require(stakingToken.transfer(account, reward), "reward transfer failed");
+        stakingToken.safeTransfer(account, reward);
         emit RewardPaid(account, reward);
     }
 

@@ -80,13 +80,13 @@ describe("Staking", function () {
 
     expect(await staking.balances(alice.address)).to.equal(0n);
 
-    await expect(staking.connect(alice).withdraw(amount)).to.be.revertedWith(
-      "insufficient stake",
-    );
+    await expect(
+      staking.connect(alice).withdraw(amount)
+    ).to.be.revertedWithCustomError(staking, "InsufficientStake");
 
     await expect(
       staking.connect(alice).withdraw(0),
-    ).to.be.revertedWith("amount zero");
+    ).to.be.revertedWithCustomError(staking, "ZeroAmount");
   });
 
   it("accrues and pays out rewards over time", async function () {
