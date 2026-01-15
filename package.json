@@ -1,5 +1,14 @@
 {
   "type": "module",
+  "scripts": {
+    "compile": "hardhat compile",
+    "test": "hardhat test",
+    "test:foundry": "forge test",
+    "test:fuzz": "forge test --match-path '*Fuzz*' -vvv",
+    "test:all": "npm run test && npm run test:foundry",
+    "lint": "solhint 'contracts/**/*.sol'",
+    "format": "forge fmt"
+  },
   "dependencies": {
     "@openzeppelin/contracts": "^5.4.0"
   },
@@ -8,6 +17,7 @@
     "@types/node": "^24.9.2",
     "ethers": "^6.13.3",
     "hardhat": "^3.0.10",
+    "solhint": "^5.0.0",
     "ts-node": "^10.9.2",
     "typescript": "^5.9.3"
   }
